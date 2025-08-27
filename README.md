@@ -1,6 +1,3 @@
-# springboot-microservices-ecommerce
-E-commerce backend built with Spring Boot microservices, PostgreSQL, Redis, AWS S3, and Spring Cloud.
-
 # 🛒 E-Commerce Backend with Spring Boot Microservices
 
 A **microservices-based e-commerce backend** built with modern Spring Boot practices, including service discovery, API gateway, caching, and cloud file storage.
