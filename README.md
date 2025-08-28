@@ -1,8 +1,8 @@
-# 🛒 E-Commerce Backend with Spring Boot Microservices
+# E-Commerce Backend with Spring Boot Microservices
 
 A **microservices-based e-commerce backend** built with modern Spring Boot practices, including service discovery, API gateway, caching, and cloud file storage.
 
-## 🚀 Tech Stack
+## Tech Stack
 - **Java 21 + Spring Boot 3**
 - **Spring Cloud Netflix Eureka** – Service discovery
 - **Spring Cloud Gateway** – API Gateway
@@ -11,7 +11,7 @@ A **microservices-based e-commerce backend** built with modern Spring Boot pract
 - **AWS S3** – File storage for product images
 - **Maven** – Build & dependency management
 
-## 🧩 Microservices Architecture
+## Microservices Architecture
 - **Eureka Server** – Registers & discovers services
 - **API Gateway** – Single entrypoint for all requests
 - **User Service** – Manages user accounts (CRUD)
