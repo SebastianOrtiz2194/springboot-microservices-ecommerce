@@ -21,7 +21,7 @@ public class Product {
 
     private String imageUrl;
 
-    // Constructors, getters, and setters
+    // Constructors
     public Product() {}
 
     public Product(String name, String description, BigDecimal price) {
