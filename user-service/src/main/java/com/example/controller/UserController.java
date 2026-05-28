@@ -1,38 +1,42 @@
 package com.example.controller;
 
 import com.example.model.User;
-import com.example.repository.UserRepository;
+import com.example.service.UserService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserService userService;
+
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
 
     @PostMapping
     public ResponseEntity<User> createUser(@Valid @RequestBody User user) {
-        User savedUser = userRepository.save(user);
+        User savedUser = userService.createUser(user);
         return new ResponseEntity<>(savedUser, HttpStatus.CREATED);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<User> getUser(@PathVariable Long id) {
-        Optional<User> user = userRepository.findById(id);
-        return user.map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        try {
+            User user = userService.getUserById(id);
+            return ResponseEntity.ok(user);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @GetMapping
     public List<User> getAllUsers() {
-        return userRepository.findAll();
+        return userService.getAllUsers();
     }
 }
