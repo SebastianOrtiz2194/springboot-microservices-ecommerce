@@ -1,35 +1,39 @@
-HELP.md
+### Build output ###
 target/
-.mvn/wrapper/maven-wrapper.jar
+build/
 !**/src/main/**/target/
 !**/src/test/**/target/
+!**/src/main/**/build/
+!**/src/test/**/build/
+*.class
+*.jar
+*.war
 
-### STS ###
+### Maven ###
+.mvn/wrapper/maven-wrapper.jar
+HELP.md
+
+### IDE ###
+## IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+## Eclipse / STS
 .apt_generated
 .classpath
 .factorypath
 .project
-.settings
+.settings/
 .springBeans
 .sts4-cache
-
-### IntelliJ IDEA ###
-.idea
-*.iws
-*.iml
-*.ipr
-
-### NetBeans ###
+## NetBeans
 /nbproject/private/
 /nbbuild/
 /dist/
 /nbdist/
 /.nb-gradle/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
-
-### VS Code ###
+## VS Code
 .vscode/
 
 ### Environment ###
@@ -43,3 +47,15 @@ Thumbs.db
 
 ### Logs ###
 *.log
+logs/
+
+### Docker ###
+Dockerfile.*.local
+docker-compose.override.yml
+*.dockerignore.local
+
+### Temporary files ###
+*.tmp
+*.bak
+*.swp
+*~
