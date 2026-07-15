@@ -38,6 +38,15 @@
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
+        <!-- Flyway — database migrations (version managed by spring-boot-starter-parent) -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+        </dependency>
         <!-- Version governed by spring-cloud-dependencies BOM in parent -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
