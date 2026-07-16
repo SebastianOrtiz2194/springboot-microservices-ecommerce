@@ -1,14 +1,13 @@
 package com.ecommerce.product.controller;
 
 import com.ecommerce.product.domain.Product;
-import com.ecommerce.product.repository.ProductRepository;
+import com.ecommerce.product.dto.CreateProductRequest;
+import com.ecommerce.product.dto.ProductResponse;
+import com.ecommerce.product.mapper.ProductMapper;
 import com.ecommerce.product.service.ProductService;
-import com.ecommerce.product.service.S3Service;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,15 +16,15 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Optional;
 
 /**
- * REST controller for product catalog management, including image uploads.
+ * REST controller for product catalog management — delegates all business logic to {@link ProductService}.
  */
 @RestController
 @RequestMapping("/api/products")
@@ -33,54 +32,49 @@ public class ProductController {
 
     private static final Logger log = LoggerFactory.getLogger(ProductController.class);
 
-    private final ProductRepository productRepository;
-    private final S3Service s3Service;
     private final ProductService productService;
+    private final ProductMapper productMapper;
 
-    public ProductController(ProductRepository productRepository,
-                             S3Service s3Service,
-                             ProductService productService) {
-        this.productRepository = productRepository;
-        this.s3Service = s3Service;
+    public ProductController(ProductService productService, ProductMapper productMapper) {
         this.productService = productService;
+        this.productMapper = productMapper;
     }
 
     /**
-     * Creates a new product and evicts the all-products cache.
+     * Creates a new product.
      *
-     * @param product the validated product payload
-     * @return the created product with HTTP 201
+     * @param request the validated product payload
+     * @return the created product
      */
     @PostMapping
-    @CacheEvict(value = "products", allEntries = true)
-    public ResponseEntity<Product> createProduct(@Valid @RequestBody Product product) {
-        Product savedProduct = productRepository.save(product);
-        return new ResponseEntity<>(savedProduct, HttpStatus.CREATED);
+    @ResponseStatus(HttpStatus.CREATED)
+    public ProductResponse createProduct(@Valid @RequestBody CreateProductRequest request) {
+        Product product = productMapper.toEntity(request);
+        Product saved = productService.createProduct(product);
+        return productMapper.toResponse(saved);
     }
 
     /**
-     * Retrieves a product by ID. Result is cached in Redis per product ID.
+     * Retrieves a product by ID.
      *
      * @param id the product identifier
-     * @return the product if found, otherwise HTTP 404
+     * @return the product
      */
     @GetMapping("/{id}")
-    @Cacheable(value = "products", key = "#id")
-    public ResponseEntity<Product> getProduct(@PathVariable Long id) {
-        Optional<Product> product = productRepository.findById(id);
-        return product.map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ProductResponse getProduct(@PathVariable Long id) {
+        return productMapper.toResponse(productService.getProduct(id));
     }
 
     /**
-     * Lists all products. Results are cached in Redis.
+     * Lists all products in the catalog.
      *
-     * @return list of all products in the catalog
+     * @return list of all products
      */
     @GetMapping
-    @Cacheable(value = "products")
-    public List<Product> getAllProducts() {
-        return productRepository.findAll();
+    public List<ProductResponse> getAllProducts() {
+        return productService.getAllProducts().stream()
+                .map(productMapper::toResponse)
+                .toList();
     }
 
     /**
@@ -94,16 +88,7 @@ public class ProductController {
     public ResponseEntity<String> uploadImage(@PathVariable Long id,
                                               @RequestParam("file") MultipartFile file) {
         try {
-            Optional<Product> productOpt = productRepository.findById(id);
-            if (productOpt.isEmpty()) {
-                return ResponseEntity.notFound().build();
-            }
-
-            Product product = productOpt.get();
-            String imageUrl = s3Service.uploadImage(file);
-            product.setImageUrl(imageUrl);
-            productRepository.save(product);
-
+            String imageUrl = productService.uploadProductImage(id, file);
             return ResponseEntity.ok(imageUrl);
         } catch (IOException e) {
             log.error("image_upload_failed product_id={}", id, e);
