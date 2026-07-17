@@ -32,6 +32,8 @@ spring:
         region: ${AWS_REGION:us-east-1}
 
 app:
+  jwt:
+    secret: ${JWT_SECRET:}
   s3:
     bucket: ${S3_BUCKET_NAME:your-bucket-name}
 
