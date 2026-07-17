@@ -28,6 +28,12 @@ public class User {
     @Column(unique = true)
     private String email;
 
+    @NotBlank
+    private String password;
+
+    @NotBlank
+    private String role;
+
     /**
      * No-args constructor required by JPA.
      */
@@ -35,14 +41,18 @@ public class User {
     }
 
     /**
-     * Creates a new user with the given name and email.
+     * Creates a new user with the given name, email, password, and role.
      *
-     * @param name  the display name of the user
-     * @param email the unique email address of the user
+     * @param name     the display name of the user
+     * @param email    the unique email address of the user
+     * @param password the hashed password
+     * @param role     the user role (e.g. USER, ADMIN)
      */
-    public User(String name, String email) {
+    public User(String name, String email, String password, String role) {
         this.name = name;
         this.email = email;
+        this.password = password;
+        this.role = role;
     }
 
     public Long getId() {
@@ -67,5 +77,21 @@ public class User {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
     }
 }
