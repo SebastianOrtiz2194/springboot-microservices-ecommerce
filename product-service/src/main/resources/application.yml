@@ -31,9 +31,21 @@ spring:
       s3:
         region: ${AWS_REGION:us-east-1}
 
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: product-service
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: com.ecommerce.product.event
+
 app:
   jwt:
     secret: ${JWT_SECRET:}
+  kafka:
+    topics:
+      order-placed: order-placed
   s3:
     bucket: ${S3_BUCKET_NAME:your-bucket-name}
 
