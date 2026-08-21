@@ -24,9 +24,22 @@ public class JwtUtil {
     public JwtUtil(@Value("${app.jwt.secret}") String secret,
                    @Value("${app.jwt.access-expiration-ms}") long accessExpiration,
                    @Value("${app.jwt.refresh-expiration-ms}") long refreshExpiration) {
+        validateSecret(secret);
         this.signingKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.accessExpiration = accessExpiration;
         this.refreshExpiration = refreshExpiration;
+    }
+
+    private static void validateSecret(String secret) {
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalStateException(
+                    "JWT secret is not configured. Set JWT_SECRET env var (min 32 chars / 256 bits)");
+        }
+        if (secret.getBytes(StandardCharsets.UTF_8).length < 32) {
+            throw new IllegalStateException(
+                    "JWT secret must be at least 32 bytes (256 bits) for HS256. Current length: "
+                            + secret.getBytes(StandardCharsets.UTF_8).length);
+        }
     }
 
     /**
