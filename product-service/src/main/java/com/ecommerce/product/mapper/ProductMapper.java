@@ -16,5 +16,6 @@ public interface ProductMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "imageUrl", ignore = true)
+    @Mapping(target = "version", ignore = true)
     Product toEntity(CreateProductRequest request);
 }

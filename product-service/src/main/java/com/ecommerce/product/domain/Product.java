@@ -1,9 +1,12 @@
 package com.ecommerce.product.domain;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import java.math.BigDecimal;
@@ -12,6 +15,7 @@ import java.math.BigDecimal;
  * Represents a product in the store catalog.
  */
 @Entity
+@Table(name = "product")
 public class Product {
 
     @Id
@@ -19,16 +23,24 @@ public class Product {
     private Long id;
 
     @NotBlank
+    @Column(nullable = false, length = 255)
     private String name;
 
+    @Column(length = 1000)
     private String description;
 
     @DecimalMin(value = "0.0", inclusive = false)
+    @Column(nullable = false, precision = 38, scale = 2)
     private BigDecimal price;
 
+    @Column(name = "stock_quantity")
     private Integer stockQuantity;
 
+    @Column(name = "image_url", length = 500)
     private String imageUrl;
+
+    @Version
+    private Integer version;
 
     /**
      * No-args constructor required by JPA.
@@ -95,5 +107,13 @@ public class Product {
 
     public void setImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
+    }
+
+    public Integer getVersion() {
+        return version;
+    }
+
+    public void setVersion(Integer version) {
+        this.version = version;
     }
 }
