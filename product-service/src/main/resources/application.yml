@@ -12,6 +12,9 @@ spring:
     hibernate:
       ddl-auto: validate
     show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
   flyway:
     enabled: true
     locations: classpath:db/migration
@@ -42,12 +45,22 @@ spring:
 
 app:
   jwt:
-    secret: ${JWT_SECRET:}
+    secret: ${JWT_SECRET:dev-secret-key-that-is-at-least-32-chars-long-for-local-dev-only-please-change}
   kafka:
     topics:
       order-placed: order-placed
   s3:
-    bucket: ${S3_BUCKET_NAME:your-bucket-name}
+    bucket: ${S3_BUCKET_NAME:dev-bucket-placeholder}
+    presigned-duration: PT1H
+    max-file-size-mb: 5
+
+logging:
+  level:
+    com.ecommerce: INFO
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
 
 eureka:
   client:

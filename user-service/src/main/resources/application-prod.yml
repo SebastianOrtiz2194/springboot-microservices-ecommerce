@@ -1,0 +1,25 @@
+# Prod profile — fail-fast: no defaults for secrets, env vars REQUIRED.
+# Run with: SPRING_PROFILES_ACTIVE=prod docker compose up
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    show-sql: false
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    access-expiration-ms: 900000
+    refresh-expiration-ms: 604800000
+
+logging:
+  level:
+    com.ecommerce: INFO
+    org.springframework.security: WARN
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL}

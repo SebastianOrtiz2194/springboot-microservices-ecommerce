@@ -1,0 +1,21 @@
+# Dev profile — local development with sensible defaults.
+# Inherits all from application.yml; JWT dev key is NOT for production.
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/user_db}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:changeme}
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+logging:
+  level:
+    com.ecommerce: DEBUG
+    org.hibernate.SQL: DEBUG
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:dev-secret-key-that-is-at-least-32-chars-long-for-local-dev-only-please-change}

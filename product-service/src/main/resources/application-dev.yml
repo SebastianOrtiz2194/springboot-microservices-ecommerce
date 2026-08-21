@@ -1,0 +1,27 @@
+# Dev profile — local development
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/product_db}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:changeme}
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+
+logging:
+  level:
+    com.ecommerce: DEBUG
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:dev-secret-key-that-is-at-least-32-chars-long-for-local-dev-only-please-change}
+  s3:
+    bucket: ${S3_BUCKET_NAME:dev-bucket-placeholder}

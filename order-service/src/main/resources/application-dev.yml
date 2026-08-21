@@ -1,0 +1,21 @@
+# Dev profile — local development
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/order_db}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:changeme}
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+
+logging:
+  level:
+    com.ecommerce: DEBUG
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:dev-secret-key-that-is-at-least-32-chars-long-for-local-dev-only-please-change}

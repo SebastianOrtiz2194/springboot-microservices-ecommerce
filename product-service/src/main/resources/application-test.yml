@@ -1,0 +1,34 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/product_test
+    username: postgres
+    password: postgres
+  flyway:
+    enabled: true
+  cache:
+    type: simple
+  data:
+    redis:
+      host: localhost
+      port: 6379
+  cloud:
+    aws:
+      s3:
+        enabled: false
+  kafka:
+    bootstrap-servers: localhost:9092
+eureka:
+  client:
+    enabled: false
+app:
+  jwt:
+    secret: test-secret-key-that-is-at-least-32-chars-long-for-tests-only
+  s3:
+    bucket: test-bucket
+    presigned-duration: PT1H
+  kafka:
+    topics:
+      order-placed: order-placed
+logging:
+  level:
+    com.ecommerce: INFO

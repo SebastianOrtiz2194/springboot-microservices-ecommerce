@@ -1,0 +1,23 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/order_test
+    username: postgres
+    password: postgres
+  flyway:
+    enabled: true
+  jpa:
+    show-sql: false
+  kafka:
+    bootstrap-servers: localhost:9092
+eureka:
+  client:
+    enabled: false
+app:
+  jwt:
+    secret: test-secret-key-that-is-at-least-32-chars-long-for-tests-only
+  kafka:
+    topics:
+      order-placed: order-placed
+logging:
+  level:
+    com.ecommerce: INFO

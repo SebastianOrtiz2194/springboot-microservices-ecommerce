@@ -1,0 +1,39 @@
+# Prod profile — fail-fast, env vars REQUIRED
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+  cloud:
+    aws:
+      region:
+        static: ${AWS_REGION}
+      credentials:
+        access-key: ${AWS_ACCESS_KEY_ID}
+        secret-key: ${AWS_SECRET_ACCESS_KEY}
+      s3:
+        region: ${AWS_REGION}
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+  s3:
+    bucket: ${S3_BUCKET_NAME}
+  kafka:
+    topics:
+      order-placed: ${ORDER_PLACED_TOPIC:order-placed}
+
+logging:
+  level:
+    com.ecommerce: INFO
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL}

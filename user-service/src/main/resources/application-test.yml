@@ -1,0 +1,21 @@
+# Test profile — used by @SpringBootTest + Testcontainers (overridden via @DynamicPropertySource)
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/user_test
+    username: postgres
+    password: postgres
+  flyway:
+    enabled: true
+  jpa:
+    show-sql: false
+eureka:
+  client:
+    enabled: false
+app:
+  jwt:
+    secret: test-secret-key-that-is-at-least-32-chars-long-for-tests-only
+    access-expiration-ms: 900000
+    refresh-expiration-ms: 604800000
+logging:
+  level:
+    com.ecommerce: INFO
