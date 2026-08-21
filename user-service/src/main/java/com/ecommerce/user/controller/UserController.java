@@ -7,9 +7,11 @@ import com.ecommerce.user.exception.UserNotFoundException;
 import com.ecommerce.user.mapper.UserMapper;
 import com.ecommerce.user.service.UserService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,6 +27,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/users")
+@Validated
 public class UserController {
 
     private static final Logger log = LoggerFactory.getLogger(UserController.class);
@@ -59,7 +62,7 @@ public class UserController {
      * @throws UserNotFoundException if the user does not exist
      */
     @GetMapping("/{id}")
-    public UserResponse getUser(@PathVariable Long id) {
+    public UserResponse getUser(@Positive @PathVariable Long id) {
         User user = userService.getUserById(id);
         return userMapper.toResponse(user);
     }
