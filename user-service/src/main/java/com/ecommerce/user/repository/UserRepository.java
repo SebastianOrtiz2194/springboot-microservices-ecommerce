@@ -1,13 +1,10 @@
 package com.ecommerce.user.repository;
 
 import com.ecommerce.user.domain.User;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.Optional;
-
-/**
- * Spring Data repository for {@link User} entities.
- */
+/** Spring Data repository for {@link User} entities. */
 public interface UserRepository extends JpaRepository<User, Long> {
 
     /**

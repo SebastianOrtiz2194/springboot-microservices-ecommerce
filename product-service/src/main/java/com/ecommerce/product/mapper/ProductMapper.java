@@ -6,9 +6,7 @@ import com.ecommerce.product.dto.ProductResponse;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-/**
- * Maps between {@link Product} entity and its DTOs.
- */
+/** Maps between {@link Product} entity and its DTOs. */
 @Mapper(componentModel = "spring")
 public interface ProductMapper {
 

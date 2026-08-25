@@ -7,6 +7,7 @@ import com.ecommerce.order.mapper.OrderMapper;
 import com.ecommerce.order.service.OrderService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
+import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
@@ -18,11 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-
-/**
- * REST controller for order management.
- */
+/** REST controller for order management. */
 @RestController
 @RequestMapping("/api/orders")
 @Validated
@@ -39,13 +36,14 @@ public class OrderController {
     /**
      * Creates a new order for the authenticated user.
      *
-     * @param request     the validated order payload
-     * @param auth        the authenticated user's security context
+     * @param request the validated order payload
+     * @param auth the authenticated user's security context
      * @return the created order
      */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public OrderResponse createOrder(@Valid @RequestBody CreateOrderRequest request, Authentication auth) {
+    public OrderResponse createOrder(
+            @Valid @RequestBody CreateOrderRequest request, Authentication auth) {
         Long userId = (Long) auth.getDetails();
         Order order = orderService.createOrder(userId, request);
         return orderMapper.toResponse(order);

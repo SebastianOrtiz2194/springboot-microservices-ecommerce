@@ -9,9 +9,7 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
-/**
- * Represents a registered user of the e-commerce platform.
- */
+/** Represents a registered user of the e-commerce platform. */
 @Entity
 @Table(name = "users")
 public class User {
@@ -20,33 +18,25 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank
-    private String name;
+    @NotBlank private String name;
 
-    @Email
-    @NotBlank
-    @Column(unique = true)
+    @Email @NotBlank @Column(unique = true)
     private String email;
 
-    @NotBlank
-    private String password;
+    @NotBlank private String password;
 
-    @NotBlank
-    private String role;
+    @NotBlank private String role;
 
-    /**
-     * No-args constructor required by JPA.
-     */
-    public User() {
-    }
+    /** No-args constructor required by JPA. */
+    public User() {}
 
     /**
      * Creates a new user with the given name, email, password, and role.
      *
-     * @param name     the display name of the user
-     * @param email    the unique email address of the user
+     * @param name the display name of the user
+     * @param email the unique email address of the user
      * @param password the hashed password
-     * @param role     the user role (e.g. USER, ADMIN)
+     * @param role the user role (e.g. USER, ADMIN)
      */
     public User(String name, String email, String password, String role) {
         this.name = name;

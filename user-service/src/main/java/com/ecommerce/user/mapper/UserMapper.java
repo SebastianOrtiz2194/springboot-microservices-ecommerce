@@ -7,8 +7,8 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
 /**
- * Maps between {@link User} entity and its DTOs.
- * MapStruct generates the implementation at compile time.
+ * Maps between {@link User} entity and its DTOs. MapStruct generates the implementation at compile
+ * time.
  */
 @Mapper(componentModel = "spring")
 public interface UserMapper {

@@ -8,16 +8,13 @@ import com.ecommerce.order.event.OrderItemEvent;
 import com.ecommerce.order.event.OrderPlacedEvent;
 import com.ecommerce.order.exception.OrderNotFoundException;
 import com.ecommerce.order.repository.OrderRepository;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-
-/**
- * Handles order-related business logic.
- */
+/** Handles order-related business logic. */
 @Service
 public class OrderService {
 
@@ -34,7 +31,7 @@ public class OrderService {
     /**
      * Creates a new order from the request, persists it, and publishes an event to Kafka.
      *
-     * @param userId  the authenticated user's ID from JWT
+     * @param userId the authenticated user's ID from JWT
      * @param request the order payload
      * @return the persisted order with generated ID
      */
@@ -46,27 +43,32 @@ public class OrderService {
         order.setUserId(userId);
 
         for (OrderItemRequest itemReq : request.items()) {
-            OrderItem item = new OrderItem(
-                    itemReq.productId(),
-                    itemReq.productName(),
-                    itemReq.quantity(),
-                    itemReq.unitPrice()
-            );
+            OrderItem item =
+                    new OrderItem(
+                            itemReq.productId(),
+                            itemReq.productName(),
+                            itemReq.quantity(),
+                            itemReq.unitPrice());
             order.addItem(item);
         }
 
         order.calculateTotal();
         Order saved = orderRepository.save(order);
 
-        OrderPlacedEvent event = new OrderPlacedEvent(
-                saved.getId(),
-                saved.getUserId(),
-                saved.getItems().stream()
-                        .map(item -> new OrderItemEvent(item.getProductId(), item.getQuantity(), item.getUnitPrice()))
-                        .toList(),
-                saved.getTotalAmount(),
-                saved.getCreatedAt()
-        );
+        OrderPlacedEvent event =
+                new OrderPlacedEvent(
+                        saved.getId(),
+                        saved.getUserId(),
+                        saved.getItems().stream()
+                                .map(
+                                        item ->
+                                                new OrderItemEvent(
+                                                        item.getProductId(),
+                                                        item.getQuantity(),
+                                                        item.getUnitPrice()))
+                                .toList(),
+                        saved.getTotalAmount(),
+                        saved.getCreatedAt());
         eventPublisher.publish(event);
 
         log.info("order_created order_id={} total={}", saved.getId(), saved.getTotalAmount());
@@ -82,8 +84,7 @@ public class OrderService {
      */
     public Order getOrderById(Long id) {
         log.info("get_order id={}", id);
-        return orderRepository.findById(id)
-                .orElseThrow(() -> new OrderNotFoundException(id));
+        return orderRepository.findById(id).orElseThrow(() -> new OrderNotFoundException(id));
     }
 
     /**

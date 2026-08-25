@@ -8,6 +8,7 @@ import com.ecommerce.user.mapper.UserMapper;
 import com.ecommerce.user.service.UserService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -20,11 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-
-/**
- * REST controller for user management endpoints.
- */
+/** REST controller for user management endpoints. */
 @RestController
 @RequestMapping("/api/users")
 @Validated
@@ -74,8 +71,6 @@ public class UserController {
      */
     @GetMapping
     public List<UserResponse> getAllUsers() {
-        return userService.getAllUsers().stream()
-                .map(userMapper::toResponse)
-                .toList();
+        return userService.getAllUsers().stream().map(userMapper::toResponse).toList();
     }
 }

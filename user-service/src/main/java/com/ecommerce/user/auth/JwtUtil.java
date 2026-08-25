@@ -3,16 +3,15 @@ package com.ecommerce.user.auth;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import java.nio.charset.StandardCharsets;
+import java.util.Date;
+import javax.crypto.SecretKey;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
-import java.util.Date;
-
 /**
- * Utility for generating and validating JSON Web Tokens.
- * The signing key is derived from the JWT_SECRET environment variable.
+ * Utility for generating and validating JSON Web Tokens. The signing key is derived from the
+ * JWT_SECRET environment variable.
  */
 @Component
 public class JwtUtil {
@@ -21,9 +20,10 @@ public class JwtUtil {
     private final long accessExpiration;
     private final long refreshExpiration;
 
-    public JwtUtil(@Value("${app.jwt.secret}") String secret,
-                   @Value("${app.jwt.access-expiration-ms}") long accessExpiration,
-                   @Value("${app.jwt.refresh-expiration-ms}") long refreshExpiration) {
+    public JwtUtil(
+            @Value("${app.jwt.secret}") String secret,
+            @Value("${app.jwt.access-expiration-ms}") long accessExpiration,
+            @Value("${app.jwt.refresh-expiration-ms}") long refreshExpiration) {
         validateSecret(secret);
         this.signingKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.accessExpiration = accessExpiration;
@@ -46,8 +46,8 @@ public class JwtUtil {
      * Generates a short-lived access token.
      *
      * @param userId the authenticated user's ID
-     * @param email  the authenticated user's email
-     * @param role   the authenticated user's role
+     * @param email the authenticated user's email
+     * @param role the authenticated user's role
      * @return a signed JWT access token
      */
     public String generateAccessToken(Long userId, String email, String role) {
@@ -58,8 +58,8 @@ public class JwtUtil {
      * Generates a long-lived refresh token.
      *
      * @param userId the authenticated user's ID
-     * @param email  the authenticated user's email
-     * @param role   the authenticated user's role
+     * @param email the authenticated user's email
+     * @param role the authenticated user's role
      * @return a signed JWT refresh token
      */
     public String generateRefreshToken(Long userId, String email, String role) {
@@ -124,10 +124,6 @@ public class JwtUtil {
     }
 
     private Claims parseClaims(String token) {
-        return Jwts.parser()
-                .verifyWith(signingKey)
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
+        return Jwts.parser().verifyWith(signingKey).build().parseSignedClaims(token).getPayload();
     }
 }

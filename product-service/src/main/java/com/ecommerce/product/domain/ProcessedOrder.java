@@ -3,24 +3,21 @@ package com.ecommerce.product.domain;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
-
 import java.time.LocalDateTime;
 
 /**
- * Tracks which orders have already been processed to ensure idempotent event handling.
- * The order_id acts as a deduplication key — a second insert with the same ID will fail.
+ * Tracks which orders have already been processed to ensure idempotent event handling. The order_id
+ * acts as a deduplication key — a second insert with the same ID will fail.
  */
 @Entity
 public class ProcessedOrder {
 
-    @Id
-    private Long orderId;
+    @Id private Long orderId;
 
     @Column(nullable = false)
     private LocalDateTime processedAt;
 
-    public ProcessedOrder() {
-    }
+    public ProcessedOrder() {}
 
     public ProcessedOrder(Long orderId) {
         this.orderId = orderId;

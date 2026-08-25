@@ -8,6 +8,9 @@ import com.ecommerce.product.mapper.ProductMapper;
 import com.ecommerce.product.service.ProductService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -23,12 +26,9 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-
 /**
- * REST controller for product catalog management — delegates all business logic to {@link ProductService}.
+ * REST controller for product catalog management — delegates all business logic to {@link
+ * ProductService}.
  */
 @RestController
 @RequestMapping("/api/products")
@@ -80,10 +80,11 @@ public class ProductController {
     @GetMapping
     public List<ProductResponse> getAllProducts() {
         return productService.getAllProducts().stream()
-                .map(product -> {
-                    ProductResponse resp = productMapper.toResponse(product);
-                    return withPresignedUrl(resp, product.getImageUrl());
-                })
+                .map(
+                        product -> {
+                            ProductResponse resp = productMapper.toResponse(product);
+                            return withPresignedUrl(resp, product.getImageUrl());
+                        })
                 .toList();
     }
 
@@ -98,21 +99,20 @@ public class ProductController {
                 response.description(),
                 response.price(),
                 response.stockQuantity(),
-                presigned
-        );
+                presigned);
     }
 
     /**
-     * Uploads an image for the specified product and returns the pre-signed S3 URL.
-     * Validates file type/size via {@link com.ecommerce.product.service.S3Service}.
+     * Uploads an image for the specified product and returns the pre-signed S3 URL. Validates file
+     * type/size via {@link com.ecommerce.product.service.S3Service}.
      *
-     * @param id   the product identifier
+     * @param id the product identifier
      * @param file the multipart image file
      * @return JSON with pre-signed URL
      */
     @PostMapping(value = "/{id}/image", consumes = "multipart/form-data")
-    public ResponseEntity<Map<String, String>> uploadImage(@Positive @PathVariable Long id,
-                                                          @RequestParam("file") MultipartFile file) {
+    public ResponseEntity<Map<String, String>> uploadImage(
+            @Positive @PathVariable Long id, @RequestParam("file") MultipartFile file) {
         try {
             String imageUrl = productService.uploadProductImage(id, file);
             return ResponseEntity.ok(Map.of("imageUrl", imageUrl));

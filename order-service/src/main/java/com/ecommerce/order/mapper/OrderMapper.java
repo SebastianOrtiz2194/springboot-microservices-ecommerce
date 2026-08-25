@@ -8,9 +8,7 @@ import com.ecommerce.order.dto.OrderResponse;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-/**
- * Maps between order-related entities and DTOs.
- */
+/** Maps between order-related entities and DTOs. */
 @Mapper(componentModel = "spring")
 public interface OrderMapper {
 

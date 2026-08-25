@@ -11,9 +11,7 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import java.math.BigDecimal;
 
-/**
- * Represents a product in the store catalog.
- */
+/** Represents a product in the store catalog. */
 @Entity
 @Table(name = "product")
 public class Product {
@@ -22,15 +20,13 @@ public class Product {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank
-    @Column(nullable = false, length = 255)
+    @NotBlank @Column(nullable = false, length = 255)
     private String name;
 
     @Column(length = 1000)
     private String description;
 
-    @DecimalMin(value = "0.0", inclusive = false)
-    @Column(nullable = false, precision = 38, scale = 2)
+    @DecimalMin(value = "0.0", inclusive = false) @Column(nullable = false, precision = 38, scale = 2)
     private BigDecimal price;
 
     @Column(name = "stock_quantity")
@@ -39,21 +35,17 @@ public class Product {
     @Column(name = "image_url", length = 500)
     private String imageUrl;
 
-    @Version
-    private Integer version;
+    @Version private Integer version;
 
-    /**
-     * No-args constructor required by JPA.
-     */
-    public Product() {
-    }
+    /** No-args constructor required by JPA. */
+    public Product() {}
 
     /**
      * Creates a new product with name, description, and price.
      *
-     * @param name        the product name
+     * @param name the product name
      * @param description a description of the product
-     * @param price       the price (must be positive)
+     * @param price the price (must be positive)
      */
     public Product(String name, String description, BigDecimal price) {
         this.name = name;

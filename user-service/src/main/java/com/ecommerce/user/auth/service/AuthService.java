@@ -12,9 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-/**
- * Handles authentication logic: registration, login, and token refresh.
- */
+/** Handles authentication logic: registration, login, and token refresh. */
 @Service
 public class AuthService {
 
@@ -24,7 +22,8 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
+    public AuthService(
+            UserRepository userRepository, PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
@@ -39,12 +38,12 @@ public class AuthService {
     public AuthResponse register(RegisterRequest request) {
         log.info("register_user email={}", request.email());
 
-        User user = new User(
-                request.name(),
-                request.email(),
-                passwordEncoder.encode(request.password()),
-                "USER"
-        );
+        User user =
+                new User(
+                        request.name(),
+                        request.email(),
+                        passwordEncoder.encode(request.password()),
+                        "USER");
 
         User saved = userRepository.save(user);
         return generateTokens(saved);
@@ -60,8 +59,10 @@ public class AuthService {
     public AuthResponse login(LoginRequest request) {
         log.info("login_user email={}", request.email());
 
-        User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new UserNotFoundException(request.email()));
+        User user =
+                userRepository
+                        .findByEmail(request.email())
+                        .orElseThrow(() -> new UserNotFoundException(request.email()));
 
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
             throw new UserNotFoundException(request.email());
@@ -90,8 +91,10 @@ public class AuthService {
     }
 
     private AuthResponse generateTokens(User user) {
-        String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getEmail(), user.getRole());
-        String refreshToken = jwtUtil.generateRefreshToken(user.getId(), user.getEmail(), user.getRole());
+        String accessToken =
+                jwtUtil.generateAccessToken(user.getId(), user.getEmail(), user.getRole());
+        String refreshToken =
+                jwtUtil.generateRefreshToken(user.getId(), user.getEmail(), user.getRole());
         return AuthResponse.of(accessToken, refreshToken);
     }
 }

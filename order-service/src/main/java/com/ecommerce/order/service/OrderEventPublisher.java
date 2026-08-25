@@ -6,9 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
-/**
- * Publishes order events to Kafka for downstream services.
- */
+/** Publishes order events to Kafka for downstream services. */
 @Service
 public class OrderEventPublisher {
 
@@ -17,8 +15,10 @@ public class OrderEventPublisher {
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final String topic;
 
-    public OrderEventPublisher(KafkaTemplate<String, Object> kafkaTemplate,
-                               @org.springframework.beans.factory.annotation.Value("${app.kafka.topics.order-placed}") String topic) {
+    public OrderEventPublisher(
+            KafkaTemplate<String, Object> kafkaTemplate,
+            @org.springframework.beans.factory.annotation.Value("${app.kafka.topics.order-placed}")
+                    String topic) {
         this.kafkaTemplate = kafkaTemplate;
         this.topic = topic;
     }

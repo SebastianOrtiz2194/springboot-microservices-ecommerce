@@ -8,13 +8,9 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 
-/**
- * Request payload for creating a new product.
- */
+/** Request payload for creating a new product. */
 public record CreateProductRequest(
         @NotBlank @Size(max = 255) String name,
         @Size(max = 1000) String description,
         @NotNull @Positive @DecimalMin(value = "0.0", inclusive = false) BigDecimal price,
-        @Min(0) Integer stockQuantity
-) {
-}
+        @Min(0) Integer stockQuantity) {}
