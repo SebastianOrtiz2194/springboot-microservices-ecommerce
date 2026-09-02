@@ -5,8 +5,6 @@ spring:
     password: postgres
   flyway:
     enabled: true
-  cache:
-    type: simple
   data:
     redis:
       host: localhost
@@ -17,6 +15,9 @@ spring:
         enabled: false
   kafka:
     bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 eureka:
   client:
     enabled: false
