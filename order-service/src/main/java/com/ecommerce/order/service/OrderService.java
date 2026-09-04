@@ -8,6 +8,7 @@ import com.ecommerce.order.event.OrderItemEvent;
 import com.ecommerce.order.event.OrderPlacedEvent;
 import com.ecommerce.order.exception.OrderNotFoundException;
 import com.ecommerce.order.repository.OrderRepository;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,10 +23,15 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final OrderEventPublisher eventPublisher;
+    private final MeterRegistry meterRegistry;
 
-    public OrderService(OrderRepository orderRepository, OrderEventPublisher eventPublisher) {
+    public OrderService(
+            OrderRepository orderRepository,
+            OrderEventPublisher eventPublisher,
+            MeterRegistry meterRegistry) {
         this.orderRepository = orderRepository;
         this.eventPublisher = eventPublisher;
+        this.meterRegistry = meterRegistry;
     }
 
     /**
@@ -71,6 +77,7 @@ public class OrderService {
                         saved.getCreatedAt());
         eventPublisher.publish(event);
 
+        meterRegistry.counter("orders_created_total").increment();
         log.info("order_created order_id={} total={}", saved.getId(), saved.getTotalAmount());
         return saved;
     }

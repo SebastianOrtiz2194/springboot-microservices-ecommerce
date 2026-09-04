@@ -5,6 +5,7 @@ import com.ecommerce.product.domain.Product;
 import com.ecommerce.product.exception.InsufficientStockException;
 import com.ecommerce.product.repository.ProcessedOrderRepository;
 import com.ecommerce.product.repository.ProductRepository;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.CacheEvict;
@@ -24,12 +25,15 @@ public class OrderEventConsumer {
 
     private final ProductRepository productRepository;
     private final ProcessedOrderRepository processedOrderRepository;
+    private final MeterRegistry meterRegistry;
 
     public OrderEventConsumer(
             ProductRepository productRepository,
-            ProcessedOrderRepository processedOrderRepository) {
+            ProcessedOrderRepository processedOrderRepository,
+            MeterRegistry meterRegistry) {
         this.productRepository = productRepository;
         this.processedOrderRepository = processedOrderRepository;
+        this.meterRegistry = meterRegistry;
     }
 
     /**
@@ -73,6 +77,7 @@ public class OrderEventConsumer {
                         "stock_decremented product_id={} qty={}",
                         item.productId(),
                         item.quantity());
+                meterRegistry.counter("stock_decrement_total").increment();
                 continue;
             }
 
@@ -108,6 +113,7 @@ public class OrderEventConsumer {
                     if (lockedStock >= item.quantity()) {
                         locked.setStockQuantity(lockedStock - item.quantity());
                         productRepository.save(locked);
+                        meterRegistry.counter("stock_decrement_total").increment();
                         log.info(
                                 "stock_updated_via_lock product_id={} new_stock={}",
                                 item.productId(),
