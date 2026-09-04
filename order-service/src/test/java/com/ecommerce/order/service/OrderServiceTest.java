@@ -12,13 +12,15 @@ import com.ecommerce.order.dto.OrderItemRequest;
 import com.ecommerce.order.event.OrderPlacedEvent;
 import com.ecommerce.order.exception.OrderNotFoundException;
 import com.ecommerce.order.repository.OrderRepository;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -30,7 +32,15 @@ class OrderServiceTest {
 
     @Mock private OrderEventPublisher eventPublisher;
 
-    @InjectMocks private OrderService orderService;
+    private MeterRegistry meterRegistry;
+
+    private OrderService orderService;
+
+    @BeforeEach
+    void setUp() {
+        meterRegistry = new SimpleMeterRegistry();
+        orderService = new OrderService(orderRepository, eventPublisher, meterRegistry);
+    }
 
     private CreateOrderRequest request() {
         return new CreateOrderRequest(
@@ -65,6 +75,8 @@ class OrderServiceTest {
         assertThat(event.userId()).isEqualTo(7L);
         assertThat(event.items()).hasSize(2);
         assertThat(event.totalAmount()).isEqualByComparingTo("35.00");
+
+        assertThat(meterRegistry.get("orders_created_total").counter().count()).isEqualTo(1.0);
     }
 
     @Test
@@ -75,6 +87,7 @@ class OrderServiceTest {
         Order saved = orderService.createOrder(7L, request);
 
         assertThat(saved.getTotalAmount()).isEqualByComparingTo("0");
+        assertThat(meterRegistry.get("orders_created_total").counter().count()).isEqualTo(1.0);
     }
 
     @Test

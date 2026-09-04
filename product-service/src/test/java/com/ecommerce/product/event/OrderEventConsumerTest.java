@@ -13,14 +13,16 @@ import com.ecommerce.product.domain.ProcessedOrder;
 import com.ecommerce.product.domain.Product;
 import com.ecommerce.product.repository.ProcessedOrderRepository;
 import com.ecommerce.product.repository.ProductRepository;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -33,7 +35,16 @@ class OrderEventConsumerTest {
 
     @Mock private ProcessedOrderRepository processedOrderRepository;
 
-    @InjectMocks private OrderEventConsumer consumer;
+    private MeterRegistry meterRegistry;
+
+    private OrderEventConsumer consumer;
+
+    @BeforeEach
+    void setUp() {
+        meterRegistry = new SimpleMeterRegistry();
+        consumer =
+                new OrderEventConsumer(productRepository, processedOrderRepository, meterRegistry);
+    }
 
     private OrderPlacedEvent event(Long orderId, OrderItemEvent... items) {
         return new OrderPlacedEvent(
@@ -69,6 +80,7 @@ class OrderEventConsumerTest {
         ArgumentCaptor<ProcessedOrder> captor = ArgumentCaptor.forClass(ProcessedOrder.class);
         verify(processedOrderRepository).save(captor.capture());
         assertThat(captor.getValue().getOrderId()).isEqualTo(1L);
+        assertThat(meterRegistry.get("stock_decrement_total").counter().count()).isEqualTo(1.0);
     }
 
     @Test
@@ -124,6 +136,7 @@ class OrderEventConsumerTest {
 
         verify(productRepository).save(locked);
         assertThat(locked.getStockQuantity()).isEqualTo(8);
+        assertThat(meterRegistry.get("stock_decrement_total").counter().count()).isEqualTo(1.0);
     }
 
     @Test
