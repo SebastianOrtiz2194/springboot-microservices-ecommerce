@@ -31,7 +31,10 @@ public class SecurityConfig {
                                 auth.requestMatchers("/api/auth/**")
                                         .permitAll()
                                         .requestMatchers(
-                                                "/actuator/health", "/actuator/info", "/error")
+                                                "/actuator/health",
+                                                "/actuator/info",
+                                                "/actuator/prometheus",
+                                                "/error")
                                         .permitAll()
                                         .requestMatchers(HttpMethod.GET, "/api/users/**")
                                         .hasAnyRole("USER", "ADMIN")

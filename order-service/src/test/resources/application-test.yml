@@ -21,3 +21,7 @@ app:
 logging:
   level:
     com.ecommerce: INFO
+management:
+  tracing:
+    sampling:
+      probability: 0.0

@@ -26,7 +26,11 @@ public class SecurityConfig {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(
                         auth ->
-                                auth.requestMatchers("/actuator/health", "/actuator/info", "/error")
+                                auth.requestMatchers(
+                                                "/actuator/health",
+                                                "/actuator/info",
+                                                "/actuator/prometheus",
+                                                "/error")
                                         .permitAll()
                                         .requestMatchers(HttpMethod.GET, "/api/orders/**")
                                         .hasAnyRole("USER", "ADMIN")
