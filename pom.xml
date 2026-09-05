@@ -35,6 +35,7 @@
 		<google-java-format.version>1.19.2</google-java-format.version>
 		<testcontainers.version>1.21.4</testcontainers.version>
 		<jacoco.version>0.8.12</jacoco.version>
+		<resilience4j.version>2.2.0</resilience4j.version>
 		<maven.compiler.source>21</maven.compiler.source>
 		<maven.compiler.target>21</maven.compiler.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
