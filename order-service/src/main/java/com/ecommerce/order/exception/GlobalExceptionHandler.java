@@ -33,6 +33,15 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+    @ExceptionHandler(OrderEventPublishException.class)
+    public ProblemDetail handleEventPublish(OrderEventPublishException ex) {
+        log.error("order_event_publish_failed {}", ex.getMessage());
+        ProblemDetail problem =
+                ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
+        problem.setTitle("Messaging unavailable");
+        return problem;
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ProblemDetail handleValidation(MethodArgumentNotValidException ex) {
         String errors =
