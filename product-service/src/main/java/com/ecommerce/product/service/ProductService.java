@@ -3,6 +3,7 @@ package com.ecommerce.product.service;
 import com.ecommerce.product.domain.Product;
 import com.ecommerce.product.exception.ProductNotFoundException;
 import com.ecommerce.product.repository.ProductRepository;
+import io.github.resilience4j.bulkhead.annotation.Bulkhead;
 import java.io.IOException;
 import java.util.List;
 import org.slf4j.Logger;
@@ -34,12 +35,14 @@ public class ProductService {
     }
 
     /**
-     * Retrieves a product by ID. Results are cached in Redis under 'product' cache.
+     * Retrieves a product by ID. Results are cached in Redis under 'product' cache. Guarded by a
+     * bulkhead so slow downstream calls cannot exhaust all request threads.
      *
      * @param id the product identifier
      * @return the matching product
      * @throws ProductNotFoundException if no product exists with the given ID
      */
+    @Bulkhead(name = "productLookup")
     @Cacheable(cacheNames = "product", key = "#id", unless = "#result == null")
     public Product getProduct(Long id) {
         log.info("get_product id={}", id);

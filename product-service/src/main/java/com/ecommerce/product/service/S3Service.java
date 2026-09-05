@@ -2,6 +2,7 @@ package com.ecommerce.product.service;
 
 import io.awspring.cloud.s3.ObjectMetadata;
 import io.awspring.cloud.s3.S3Template;
+import io.github.resilience4j.retry.annotation.Retry;
 import java.io.IOException;
 import java.net.URL;
 import java.time.Duration;
@@ -48,11 +49,15 @@ public class S3Service {
      * Uploads a file to the configured S3 bucket and returns the stored S3 key. The pre-signed URL
      * should be generated via {@link #createPresignedUrl(String)} on read.
      *
+     * <p>Transient S3 failures are retried with exponential backoff; validation failures are not
+     * retried.
+     *
      * @param file the multipart file to upload
      * @return the S3 key (to be persisted as imageUrl/imageKey)
      * @throws IOException if the upload fails
      * @throws IllegalArgumentException if validation fails
      */
+    @Retry(name = "s3Upload")
     public String uploadImage(MultipartFile file) throws IOException {
         validateFile(file);
 

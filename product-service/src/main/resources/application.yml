@@ -43,6 +43,23 @@ spring:
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: com.ecommerce.product.event
+        request.timeout.ms: 30000
+        max.poll.interval.ms: 300000
+
+resilience4j:
+  retry:
+    instances:
+      s3Upload:
+        max-attempts: 3
+        wait-duration: 500ms
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2.0
+        ignore-exceptions:
+          - java.lang.IllegalArgumentException
+  bulkhead:
+    instances:
+      productLookup:
+        max-concurrent-calls: 25
 
 app:
   jwt:

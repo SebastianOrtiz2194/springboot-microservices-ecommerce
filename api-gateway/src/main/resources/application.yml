@@ -8,6 +8,9 @@ spring:
     exclude: org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
   cloud:
     gateway:
+      httpclient:
+        connect-timeout: 2000
+        response-timeout: 10s
       routes:
         - id: user-service
           uri: lb://user-service
