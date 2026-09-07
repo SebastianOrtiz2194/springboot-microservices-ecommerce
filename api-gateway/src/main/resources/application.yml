@@ -24,6 +24,37 @@ spring:
           uri: lb://order-service
           predicates:
             - Path=/api/orders/**
+        - id: user-api-docs
+          uri: lb://user-service
+          predicates:
+            - Path=/user-service/v3/api-docs
+          filters:
+            - StripPrefix=1
+        - id: product-api-docs
+          uri: lb://product-service
+          predicates:
+            - Path=/product-service/v3/api-docs
+          filters:
+            - StripPrefix=1
+        - id: order-api-docs
+          uri: lb://order-service
+          predicates:
+            - Path=/order-service/v3/api-docs
+          filters:
+            - StripPrefix=1
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    urls:
+      - name: user-service
+        url: /user-service/v3/api-docs
+      - name: product-service
+        url: /product-service/v3/api-docs
+      - name: order-service
+        url: /order-service/v3/api-docs
 
 eureka:
   client:
