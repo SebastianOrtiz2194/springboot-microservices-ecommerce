@@ -6,6 +6,13 @@ import com.ecommerce.product.dto.ProductResponse;
 import com.ecommerce.product.exception.ImageUploadException;
 import com.ecommerce.product.mapper.ProductMapper;
 import com.ecommerce.product.service.ProductService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import java.io.IOException;
@@ -14,6 +21,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,6 +38,8 @@ import org.springframework.web.multipart.MultipartFile;
  * REST controller for product catalog management — delegates all business logic to {@link
  * ProductService}.
  */
+@Tag(name = "products", description = "Product catalog (ADMIN for writes)")
+@SecurityRequirement(name = "bearerAuth")
 @RestController
 @RequestMapping("/api/products")
 @Validated
@@ -51,6 +61,15 @@ public class ProductController {
      * @param request the validated product payload
      * @return the created product
      */
+    @Operation(summary = "Create a product", description = "Requires ADMIN role")
+    @ApiResponses({
+        @ApiResponse(responseCode = "201", description = "Product created"),
+        @ApiResponse(
+                responseCode = "400",
+                description = "Validation failed",
+                content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
+        @ApiResponse(responseCode = "403", description = "Forbidden")
+    })
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ProductResponse createProduct(@Valid @RequestBody CreateProductRequest request) {
@@ -65,6 +84,15 @@ public class ProductController {
      * @param id the product identifier
      * @return the product with a fresh pre-signed image URL if present
      */
+    @Operation(summary = "Get a product by ID")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Product found"),
+        @ApiResponse(responseCode = "400", description = "Invalid ID"),
+        @ApiResponse(
+                responseCode = "404",
+                description = "Product not found",
+                content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
+    })
     @GetMapping("/{id}")
     public ProductResponse getProduct(@Positive @PathVariable Long id) {
         Product product = productService.getProduct(id);
@@ -77,6 +105,8 @@ public class ProductController {
      *
      * @return list of all products with pre-signed URLs
      */
+    @Operation(summary = "List all products")
+    @ApiResponses({@ApiResponse(responseCode = "200", description = "Product list")})
     @GetMapping
     public List<ProductResponse> getAllProducts() {
         return productService.getAllProducts().stream()
@@ -110,6 +140,15 @@ public class ProductController {
      * @param file the multipart image file
      * @return JSON with pre-signed URL
      */
+    @Operation(
+            summary = "Upload a product image",
+            description = "Requires ADMIN role. JPEG/PNG/WebP, max 5MB")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Image uploaded, URL returned"),
+        @ApiResponse(responseCode = "400", description = "Invalid file"),
+        @ApiResponse(responseCode = "404", description = "Product not found"),
+        @ApiResponse(responseCode = "413", description = "File too large")
+    })
     @PostMapping(value = "/{id}/image", consumes = "multipart/form-data")
     public ResponseEntity<Map<String, String>> uploadImage(
             @Positive @PathVariable Long id, @RequestParam("file") MultipartFile file) {
