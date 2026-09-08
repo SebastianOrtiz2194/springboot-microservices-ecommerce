@@ -1,0 +1,230 @@
+{
+  "info": {
+    "name": "E-Commerce Platform",
+    "description": "API collection for the microservices e-commerce platform.\n\nRun order: Auth → Users → Products → Orders.\nBase URL points at the API Gateway (port 8080). Register/Login auto-save tokens into collection variables via test scripts.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "accessToken", "value": "" },
+    { "key": "refreshToken", "value": "" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  pm.collectionVariables.set('accessToken', json.accessToken);",
+                  "  pm.collectionVariables.set('refreshToken', json.refreshToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/register",
+            "auth": { "type": "noauth" },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Alice\",\n  \"email\": \"alice@example.com\",\n  \"password\": \"s3cret-password\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  pm.collectionVariables.set('accessToken', json.accessToken);",
+                  "  pm.collectionVariables.set('refreshToken', json.refreshToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "auth": { "type": "noauth" },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"alice@example.com\",\n  \"password\": \"s3cret-password\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/refresh",
+            "auth": { "type": "noauth" },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "List users",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/users" },
+          "response": []
+        },
+        {
+          "name": "Get user by id",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/users/1" },
+          "response": []
+        },
+        {
+          "name": "Create user (ADMIN)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/users",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Bob\",\n  \"email\": \"bob@example.com\",\n  \"password\": \"s3cret-password\",\n  \"role\": \"USER\"\n}"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "List products",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/products" },
+          "response": []
+        },
+        {
+          "name": "Get product by id",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/products/1" },
+          "response": []
+        },
+        {
+          "name": "Create product (ADMIN)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/products",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Wireless Headphones\",\n  \"description\": \"Noise-cancelling Bluetooth headphones\",\n  \"price\": 79.99,\n  \"stockQuantity\": 100\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Upload product image (ADMIN)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/products/1/image",
+            "body": {
+              "mode": "formdata",
+              "formdata": [{ "key": "file", "type": "file", "src": [] }]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Orders",
+      "item": [
+        {
+          "name": "Create order",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/orders",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    { \"productId\": 1, \"productName\": \"Wireless Headphones\", \"quantity\": 2, \"unitPrice\": 79.99 },\n    { \"productId\": 2, \"productName\": \"Mechanical Keyboard\", \"quantity\": 1, \"unitPrice\": 149.99 }\n  ]\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List my orders",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/orders" },
+          "response": []
+        },
+        {
+          "name": "Get order by id",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/orders/1" },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Docs and Health",
+      "item": [
+        {
+          "name": "Gateway Swagger UI",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/swagger-ui.html",
+            "auth": { "type": "noauth" }
+          },
+          "response": []
+        },
+        {
+          "name": "User API docs (via gateway)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/user-service/v3/api-docs",
+            "auth": { "type": "noauth" }
+          },
+          "response": []
+        },
+        {
+          "name": "Product API docs (via gateway)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/product-service/v3/api-docs",
+            "auth": { "type": "noauth" }
+          },
+          "response": []
+        },
+        {
+          "name": "Order API docs (via gateway)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/order-service/v3/api-docs",
+            "auth": { "type": "noauth" }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
