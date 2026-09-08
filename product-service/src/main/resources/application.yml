@@ -40,8 +40,12 @@ spring:
       group-id: product-service
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
       properties:
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
+        # Consumer owns its schema view: ignore producer type headers, always bind to our event type
+        spring.json.use.type.headers: false
+        spring.json.value.default.type: com.ecommerce.product.event.OrderPlacedEvent
         spring.json.trusted.packages: com.ecommerce.product.event
         request.timeout.ms: 30000
         max.poll.interval.ms: 300000
@@ -96,6 +100,8 @@ management:
       endpoint: ${ZIPKIN_URL:http://localhost:9411/api/v2/spans}
 
 eureka:
+  instance:
+    prefer-ip-address: true
   client:
     service-url:
       defaultZone: ${EUREKA_URL:http://localhost:8761/eureka}

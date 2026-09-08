@@ -12,6 +12,10 @@ spring:
         connect-timeout: 2000
         response-timeout: 10s
       routes:
+        - id: auth-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/auth/**
         - id: user-service
           uri: lb://user-service
           predicates:
@@ -57,6 +61,8 @@ springdoc:
         url: /order-service/v3/api-docs
 
 eureka:
+  instance:
+    prefer-ip-address: true
   client:
     service-url:
       defaultZone: ${EUREKA_URL:http://localhost:8761/eureka}
