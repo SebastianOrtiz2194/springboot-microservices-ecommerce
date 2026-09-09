@@ -1,0 +1,13 @@
+# Keep the build context small — and never bake secrets or local state into images.
+target/
+.git/
+.idea/
+.vscode/
+*.iml
+*.log
+logs/
+.env
+.env.*
+*.env
+docker-compose.override.yml
+Dockerfile.*.local
