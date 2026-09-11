@@ -71,6 +71,10 @@ app:
   kafka:
     topics:
       order-placed: order-placed
+    processed-order:
+      # Prune dedupe rows older than Kafka's retention can ever redeliver (default retention: 7d)
+      retention-days: 30
+      cleanup-cron: "0 0 3 * * *"
   s3:
     bucket: ${S3_BUCKET_NAME:dev-bucket-placeholder}
     presigned-duration: PT1H
