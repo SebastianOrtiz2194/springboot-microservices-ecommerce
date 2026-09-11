@@ -27,11 +27,12 @@ jobs:
           java-version: '21'
           cache: maven
 
-      # Runs: compile + unit tests + @WebMvcTest/@DataJpaTest slices + Testcontainers
-      # integration tests (Docker is available on ubuntu-latest) + Spotless check +
-      # JaCoCo coverage gates.
-      - name: Verify (build, tests, spotless, coverage)
-        run: ./mvnw -B verify
+      # Runs: clean + compile + unit tests + @WebMvcTest/@DataJpaTest slices +
+      # Testcontainers integration tests (Docker is available on ubuntu-latest) +
+      # Spotless check + JaCoCo coverage gates. `clean` guarantees no stale
+      # bytecode from previous builds can mask or break the build.
+      - name: Verify (clean, build, tests, spotless, coverage)
+        run: ./mvnw -B clean verify
 
       - name: Validate docker compose file
         run: docker compose config --quiet
