@@ -181,6 +181,25 @@ secret, rotation is a deploy-time event: rotate the value, roll the services, ac
 tokens signed with the old key are invalidated (or keep a key ring for graceful rotation —
 a Phase-11+ enhancement).
 
+#### JWT rotation behavior in this project
+
+All three services verify tokens with the same `JWT_SECRET`, and both token types are signed
+with it:
+
+| Token | TTL | Consequence of rotating the signing key |
+|---|---|---|
+| Access token | 15 min (`access-expiration-ms: 900000`) | Outstanding access tokens rejected (max 15 min of disruption) |
+| Refresh token | 7 days (`refresh-expiration-ms: 604800000`) | Outstanding refresh tokens rejected too — clients must log in again |
+
+There is intentionally no grace period: one key signs everything. The short access TTL keeps
+the blast radius small — rotate during low traffic, deploy all services together (they share
+the key; a partial rollout causes 401s on the old instances), and clients transparently
+re-authenticate via `/api/auth/login`.
+
+For zero-downtime rotation the industry pattern is a **key ring**: sign with the newest key,
+verify against a list (newest first), drop old keys after the refresh TTL passes. It is the
+recommended next step before running this in production.
+
 ---
 
 ## Comparison
