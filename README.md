@@ -229,6 +229,9 @@ Profiles: default (local dev) • `dev` (verbose SQL) • `prod` (fail-fast, env
   transaction back (no phantom orders) and fails fast when the breaker is open.
 - **Split Redis caches + explicit eviction** — single-product vs list caches never go stale
   after writes, uploads, or stock updates.
+- **Bounded dedupe table** — `processed_order` rows are pruned nightly once they are older
+  than Kafka could ever redeliver them (30d retention vs 7d broker retention), so the
+  idempotency guard stays cheap forever.
 - **Fail-fast secrets** — empty/weak JWT keys and missing prod env vars crash at startup
   with a clear message instead of obscure runtime errors.
 
