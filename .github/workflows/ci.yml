@@ -31,8 +31,10 @@ jobs:
       # Testcontainers integration tests (Docker is available on ubuntu-latest) +
       # Spotless check + JaCoCo coverage gates. `clean` guarantees no stale
       # bytecode from previous builds can mask or break the build.
+      # `chmod +x` guards against the wrapper losing its executable bit in git
+      # (Windows checkouts store 100644, which fails on Linux runners with exit 126).
       - name: Verify (clean, build, tests, spotless, coverage)
-        run: ./mvnw -B clean verify
+        run: chmod +x mvnw && ./mvnw -B clean verify
 
       - name: Validate docker compose file
         run: docker compose config --quiet
