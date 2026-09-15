@@ -54,23 +54,46 @@ discovery, JWT auth, event-driven stock management, and full observability.
 
 ## Prerequisites
 
-- Java 21+, Maven 3.9+ (or use `./mvnw`)
-- PostgreSQL on `localhost:5432` with databases `user_db`, `product_db`, `order_db`
-- Redis on `localhost:6379`
-- Kafka on `localhost:9092` (KRaft, no Zookeeper)
-- AWS credentials + S3 bucket (only for real image uploads)
-- Docker Desktop (for Testcontainers-based tests; set
-  `DOCKER_HOST=npipe:////./pipe/docker_engine` on Windows)
+- **Docker Desktop** (or Docker Engine + Compose v2) — runs the full stack and the
+  Testcontainers-based tests
+- **Java 21+** and **Maven 3.9+** (or the bundled `./mvnw`) — for running/building the
+  services outside Docker
+- AWS account + S3 bucket — only needed for real product image uploads
 
-Copy the env template first:
+> Windows note: if Testcontainers cannot find the Docker pipe, set
+> `DOCKER_HOST=npipe:////./pipe/docker_engine` before running tests.
+
+## Quick Start (Docker Compose)
+
+One command runs everything: 3 services, gateway, Eureka, PostgreSQL ×3, Redis,
+Kafka (KRaft), Zipkin, Prometheus and Grafana.
 
 ```bash
-cp .env.example .env   # .env is gitignored — never commit secrets
+cp .env.example .env   # set DB_PASSWORD, JWT_SECRET and AWS_* — .env is gitignored
+docker compose up --build -d
 ```
 
-## Getting Started
+| Endpoint | URL |
+|---|---|
+| Gateway — entry point for all APIs | http://localhost:8080 |
+| Swagger UI — all 3 APIs aggregated | http://localhost:8080/swagger-ui.html |
+| Eureka dashboard | http://localhost:8761 |
+| Grafana (admin / admin by default) | http://localhost:3000 |
+| Prometheus | http://localhost:9090 |
+| Zipkin (distributed traces) | http://localhost:9411 |
 
-Start infrastructure, then services in order (each in its own terminal):
+Check the stack with `docker compose ps` (every container should report `healthy`).
+
+```bash
+docker compose down       # stop
+docker compose down -v    # stop and wipe data volumes (databases, Kafka, Grafana)
+```
+
+## Local Development (bare metal)
+
+Prefer running services from your IDE or Maven? Start PostgreSQL (databases `user_db`,
+`product_db`, `order_db`), Redis on `localhost:6379` and Kafka on `localhost:9092` first,
+then each service in its own terminal:
 
 ```bash
 # 1. Service Discovery
@@ -89,12 +112,8 @@ Start infrastructure, then services in order (each in its own terminal):
 ./mvnw spring-boot:run -pl order-service
 ```
 
-Entry points:
-
-- Eureka Dashboard: http://localhost:8761
-- Gateway Swagger UI (all 3 APIs): http://localhost:8080/swagger-ui.html
-- Per-service docs: `:8081`/`:8082`/`:8083` `/swagger-ui.html`
-- Health: `/actuator/health` • Metrics: `/actuator/prometheus`
+Service URLs are the same as in the Docker quick start (gateway on `:8080`, Eureka on
+`:8761`, per-service Swagger UI on `:8081`/`:8082`/`:8083`).
 
 ## Auth Flow
 
@@ -211,6 +230,31 @@ Packages are organized **by feature** (`user`, `product`, `order`), not by layer
 Profiles: default (local dev) • `dev` (verbose SQL) • `prod` (fail-fast, env required) •
 `test` (containers, no tracing).
 
+## Observability
+
+Every service and the gateway expose Actuator endpoints; Prometheus scrapes all four
+targets, traces flow to Zipkin, and Grafana is pre-provisioned with a Prometheus datasource.
+
+| What | Where |
+|---|---|
+| Health | `GET /actuator/health` on each service |
+| Metrics (Prometheus format) | `GET /actuator/prometheus` on each service |
+| Dashboards | Grafana http://localhost:3000 (datasource pre-wired) |
+| Scrape config | `docker/prometheus/prometheus.yml` |
+| Distributed traces | Zipkin http://localhost:9411 |
+
+Custom business metrics:
+
+| Metric | Emitted by |
+|---|---|
+| `orders_total` | order-service, on each created order |
+| `stock_decrement_total` | product-service, on each successful stock decrement |
+| `cache_hit_total` / `cache_miss_total` | product-service, per cache (`product`, `productList`) |
+| `resilience4j_*` | circuit breaker / retry / bulkhead state |
+
+Logs are trace-correlated: the console pattern prints `traceId`/`spanId` on every line, so a
+request can be followed from the gateway through a service and into the Kafka consumer.
+
 ## Design Decisions (interview notes)
 
 - **DTOs + MapStruct, never entities in APIs** — decouples persistence from contract.
@@ -248,3 +292,7 @@ mvn test -pl order-service -Dtest=OrderServiceTest   # single class
   `service`/`auth`/`event` packages.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for conventions.
+
+## License
+
+[MIT](LICENSE)
