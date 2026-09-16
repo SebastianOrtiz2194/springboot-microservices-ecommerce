@@ -68,8 +68,9 @@ public class ProductService {
      * Returns all products in the catalog. Results are cached in Redis under 'productList'. Uses a
      * short TTL (10m via RedisCacheConfig) to limit stale data.
      *
+     * <p>Loads the entire table; for large catalogs prefer {@link #getAllProducts(Pageable)}.
+     *
      * @return list of all products
-     * @deprecated Use {@link #getAllProducts(Pageable)} for pagination; this loads entire table.
      */
     @Cacheable(cacheNames = "productList")
     public List<Product> getAllProducts() {
