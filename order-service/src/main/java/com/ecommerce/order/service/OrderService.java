@@ -43,6 +43,9 @@ public class OrderService {
      */
     @Transactional
     public Order createOrder(Long userId, CreateOrderRequest request) {
+        if (request.items() == null || request.items().isEmpty()) {
+            throw new IllegalArgumentException("Order must contain at least one item");
+        }
         log.info("create_order user_id={} items={}", userId, request.items().size());
 
         Order order = new Order();
