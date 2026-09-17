@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.ecommerce.order.domain.Order;
@@ -80,14 +81,27 @@ class OrderServiceTest {
     }
 
     @Test
-    void createOrder_emptyItemListTotalsZero() {
+    void createOrder_rejectsEmptyItemListWithoutSideEffects() {
         CreateOrderRequest request = new CreateOrderRequest(List.of());
-        when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        Order saved = orderService.createOrder(7L, request);
+        assertThatThrownBy(() -> orderService.createOrder(7L, request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Order must contain at least one item");
 
-        assertThat(saved.getTotalAmount()).isEqualByComparingTo("0");
-        assertThat(meterRegistry.get("orders_created_total").counter().count()).isEqualTo(1.0);
+        verifyNoInteractions(orderRepository, eventPublisher);
+        assertThat(meterRegistry.find("orders_created_total").counter()).isNull();
+    }
+
+    @Test
+    void createOrder_rejectsNullItemListWithoutSideEffects() {
+        CreateOrderRequest request = new CreateOrderRequest(null);
+
+        assertThatThrownBy(() -> orderService.createOrder(7L, request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Order must contain at least one item");
+
+        verifyNoInteractions(orderRepository, eventPublisher);
+        assertThat(meterRegistry.find("orders_created_total").counter()).isNull();
     }
 
     @Test
