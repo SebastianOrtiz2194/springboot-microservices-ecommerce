@@ -60,6 +60,12 @@ public class ProductService {
             cacheNames = {"product", "productList"},
             allEntries = true)
     public Product createProduct(Product product) {
+        if (product == null) {
+            throw new IllegalArgumentException("Product must not be null");
+        }
+        if (product.getStockQuantity() == null) {
+            product.setStockQuantity(0);
+        }
         log.info("create_product name={}", product.getName());
         return productRepository.save(product);
     }
