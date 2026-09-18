@@ -3,6 +3,7 @@ package com.ecommerce.product.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.ecommerce.product.domain.Product;
@@ -63,6 +64,27 @@ class ProductServiceTest {
         Product result = productService.createProduct(product);
 
         assertThat(result).isSameAs(product);
+        verify(productRepository).save(product);
+    }
+
+    @Test
+    void createProduct_rejectsNullWithoutSideEffects() {
+        assertThatThrownBy(() -> productService.createProduct(null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Product must not be null");
+
+        verifyNoInteractions(productRepository);
+    }
+
+    @Test
+    void createProduct_defaultsNullStockToZero() {
+        Product product = product(null);
+        product.setStockQuantity(null);
+        when(productRepository.save(product)).thenReturn(product);
+
+        Product result = productService.createProduct(product);
+
+        assertThat(result.getStockQuantity()).isZero();
         verify(productRepository).save(product);
     }
 
