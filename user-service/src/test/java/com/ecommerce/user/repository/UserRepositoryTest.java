@@ -41,6 +41,16 @@ class UserRepositoryTest {
     }
 
     @Test
+    void existsByEmail_returnsTrueForSeededUser() {
+        assertThat(userRepository.existsByEmail("john@example.com")).isTrue();
+    }
+
+    @Test
+    void existsByEmail_returnsFalseForUnknownEmail() {
+        assertThat(userRepository.existsByEmail("nobody@example.com")).isFalse();
+    }
+
+    @Test
     void save_persistsUserWithGeneratedId() {
         User user = new User("Alice", "alice@example.com", "hashed", "USER");
 

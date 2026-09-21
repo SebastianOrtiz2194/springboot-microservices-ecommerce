@@ -12,6 +12,7 @@ import com.ecommerce.user.auth.dto.AuthResponse;
 import com.ecommerce.user.auth.dto.LoginRequest;
 import com.ecommerce.user.auth.dto.RegisterRequest;
 import com.ecommerce.user.domain.User;
+import com.ecommerce.user.exception.EmailAlreadyRegisteredException;
 import com.ecommerce.user.exception.UserNotFoundException;
 import com.ecommerce.user.repository.UserRepository;
 import java.util.Optional;
@@ -63,6 +64,20 @@ class AuthServiceTest {
         assertThat(response.accessToken()).isEqualTo("access-token");
         assertThat(response.refreshToken()).isEqualTo("refresh-token");
         assertThat(response.tokenType()).isEqualTo("Bearer");
+    }
+
+    @Test
+    void register_throwsWhenEmailAlreadyRegistered() {
+        RegisterRequest request = new RegisterRequest("Alice", "alice@example.com", "secret123");
+        when(userRepository.existsByEmail("alice@example.com")).thenReturn(true);
+
+        assertThatThrownBy(() -> authService.register(request))
+                .isInstanceOf(EmailAlreadyRegisteredException.class)
+                .hasMessageContaining("alice@example.com");
+
+        verify(passwordEncoder, never()).encode(any());
+        verify(userRepository, never()).save(any());
+        verify(jwtUtil, never()).generateAccessToken(any(), any(), any());
     }
 
     @Test
