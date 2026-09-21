@@ -33,6 +33,16 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+    @ExceptionHandler(EmailAlreadyRegisteredException.class)
+    public ProblemDetail handleEmailAlreadyRegistered(EmailAlreadyRegisteredException ex) {
+        log.warn("email_already_registered {}", ex.getMessage());
+        ProblemDetail problem =
+                ProblemDetail.forStatusAndDetail(
+                        HttpStatus.CONFLICT, "Email is already registered");
+        problem.setTitle("Conflict");
+        return problem;
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ProblemDetail handleValidation(MethodArgumentNotValidException ex) {
         String errors =

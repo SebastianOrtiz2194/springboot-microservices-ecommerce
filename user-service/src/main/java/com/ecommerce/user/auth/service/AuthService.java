@@ -5,6 +5,7 @@ import com.ecommerce.user.auth.dto.AuthResponse;
 import com.ecommerce.user.auth.dto.LoginRequest;
 import com.ecommerce.user.auth.dto.RegisterRequest;
 import com.ecommerce.user.domain.User;
+import com.ecommerce.user.exception.EmailAlreadyRegisteredException;
 import com.ecommerce.user.exception.UserNotFoundException;
 import com.ecommerce.user.repository.UserRepository;
 import org.slf4j.Logger;
@@ -34,9 +35,15 @@ public class AuthService {
      *
      * @param request the registration payload
      * @return JWT tokens for the new user
+     * @throws EmailAlreadyRegisteredException if the email is already taken
      */
     public AuthResponse register(RegisterRequest request) {
         log.info("register_user email={}", request.email());
+
+        if (userRepository.existsByEmail(request.email())) {
+            log.warn("register_conflict email={}", request.email());
+            throw new EmailAlreadyRegisteredException(request.email());
+        }
 
         User user =
                 new User(
