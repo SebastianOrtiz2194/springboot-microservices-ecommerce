@@ -27,6 +27,9 @@ public class UserService {
      * @return the persisted user with generated ID
      */
     public User createUser(User user) {
+        if (user == null) {
+            throw new IllegalArgumentException("User must not be null");
+        }
         log.info("create_user email={}", user.getEmail());
         return userRepository.save(user);
     }
