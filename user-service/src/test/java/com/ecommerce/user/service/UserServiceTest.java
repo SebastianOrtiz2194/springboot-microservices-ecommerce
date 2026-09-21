@@ -3,6 +3,7 @@ package com.ecommerce.user.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.ecommerce.user.domain.User;
@@ -34,6 +35,15 @@ class UserServiceTest {
 
         assertThat(result).isSameAs(user);
         verify(userRepository).save(user);
+    }
+
+    @Test
+    void createUser_rejectsNullWithoutSideEffects() {
+        assertThatThrownBy(() -> userService.createUser(null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("User must not be null");
+
+        verifyNoInteractions(userRepository);
     }
 
     @Test
