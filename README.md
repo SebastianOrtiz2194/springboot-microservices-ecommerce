@@ -133,14 +133,18 @@ curl -X POST localhost:8080/api/auth/refresh \
   -H 'Content-Type: application/json' \
   -d '{"refreshToken":"<refresh-token>"}'
 
-# Authenticated request (USER or ADMIN for reads, ADMIN for writes)
+# Authenticated request (USER or ADMIN; product/user writes additionally require ADMIN)
 curl localhost:8080/api/products \
   -H "Authorization: Bearer <access-token>"
 ```
 
-Roles: `USER` (read catalog, manage own orders) and `ADMIN` (create users/products,
-upload images). Seeded users: `john@example.com` / `jane@example.com` (password `changeme`
-in dev seed data only — see Flyway migrations).
+Roles: `USER` (read catalog, place orders, list own orders) and `ADMIN` (all of the above,
+plus create users/products and upload images).
+
+Dev seed data (Flyway, demo convenience only): sample users `john@example.com` /
+`jane@example.com` (role `USER`) and five catalog products with stock. The seeded users'
+password placeholder (`changeme`) is not a BCrypt hash, so those accounts cannot log in —
+use `POST /api/auth/register` above to get a working account and tokens.
 
 ## API Endpoints
 
@@ -148,7 +152,7 @@ in dev seed data only — see Flyway migrations).
 
 | Method | Endpoint           | Description       |
 |--------|--------------------|-------------------|
-| POST   | `/api/auth/register` | Register account, returns tokens |
+| POST   | `/api/auth/register` | Register account, returns tokens (409 if email already registered) |
 | POST   | `/api/auth/login`    | Login, returns tokens            |
 | POST   | `/api/auth/refresh`  | New access token from refresh token |
 
@@ -164,7 +168,7 @@ in dev seed data only — see Flyway migrations).
 
 | Method | Endpoint                   | Role  | Description          |
 |--------|----------------------------|-------|----------------------|
-| POST   | `/api/products`            | ADMIN | Create product       |
+| POST   | `/api/products`            | ADMIN | Create product (stock defaults to 0) |
 | GET    | `/api/products/{id}`       | USER+ | Get product (fresh presigned image URL) |
 | GET    | `/api/products`            | USER+ | List all products    |
 | POST   | `/api/products/{id}/image` | ADMIN | Upload image (JPEG/PNG/WebP ≤5MB) |
@@ -173,7 +177,7 @@ in dev seed data only — see Flyway migrations).
 
 | Method | Endpoint          | Description                              |
 |--------|-------------------|------------------------------------------|
-| POST   | `/api/orders`     | Create order, publishes `OrderPlacedEvent` |
+| POST   | `/api/orders`     | Create order, publishes `OrderPlacedEvent` (400 if `items` is empty) |
 | GET    | `/api/orders`     | List my orders                           |
 | GET    | `/api/orders/{id}`| Get order by ID                          |
 
@@ -187,7 +191,7 @@ Postman: [`docs/postman_collection.json`](docs/postman_collection.json) (tokens 
 
 ```
 ecommerce-platform/
-├── service-discovery/   # Eureka Server (8761)
+├── service-discovery/   # Eureka Server (8761) + Actuator readiness gate
 ├── api-gateway/         # Spring Cloud Gateway (8080) + Swagger aggregation
 ├── user-service/        # Auth + users (8081)
 │   └── com.ecommerce.user/
@@ -203,12 +207,18 @@ ecommerce-platform/
 │       ├── domain/      # Product (@Version), ProcessedOrder (dedupe)
 │       ├── event/       # OrderEventConsumer (idempotent, atomic decrement)
 │       ├── service/     # ProductService (Redis cache), S3Service (validated uploads)
-│       └── config/      # RedisCacheConfig (+ hit/miss metrics), SecurityConfig
+│       ├── config/      # RedisCacheConfig (+ hit/miss metrics), SecurityConfig
+│       └── dto|mapper|exception|controller|repository
 ├── order-service/       # Orders + Kafka producer (8083)
 │   └── com.ecommerce.order/
 │       ├── domain/      # Order, OrderItem, OrderStatus
-│       └── service/     # OrderService (@Transactional), OrderEventPublisher (circuit breaker)
-├── docs/                # OpenAPI specs + Postman collection
+│       ├── service/     # OrderService (@Transactional), OrderEventPublisher (circuit breaker)
+│       └── event|dto|mapper|config|exception|controller|repository
+├── docker/              # Prometheus scrape config + Grafana provisioning
+├── docs/                # OpenAPI specs, Postman collection, secrets guide
+├── .github/workflows/   # CI: clean verify + Spotless + compose config check
+├── Dockerfile           # Multi-stage build shared by all services (`--build-arg SERVICE=`)
+├── docker-compose.yml   # Apps + Postgres ×3 + Redis + Kafka KRaft + observability
 └── pom.xml              # Parent: BOMs, Spotless, JaCoCo, Testcontainers
 ```
 
@@ -218,28 +228,33 @@ Packages are organized **by feature** (`user`, `product`, `order`), not by layer
 
 | Property | Location | Description |
 |---|---|---|
-| `spring.datasource.*` | all services | PostgreSQL (`DB_URL/DB_USERNAME/DB_PASSWORD`) |
+| `spring.datasource.*` | user/product/order | PostgreSQL (`DB_URL/DB_USERNAME/DB_PASSWORD`) |
 | `spring.data.redis.*` | product-service | Redis (`REDIS_HOST/REDIS_PORT`) |
 | `spring.kafka.*` | order/product | Broker (`KAFKA_BOOTSTRAP_SERVERS`) + timeouts |
-| `app.jwt.secret` | all services | JWT signing key, min 32 bytes (`JWT_SECRET`) |
-| `app.s3.*` | product-service | Bucket, presigned TTL, max file size |
+| `app.jwt.secret` | user/product/order | JWT signing key, min 32 bytes (`JWT_SECRET`) |
+| `app.s3.*` | product-service | Bucket (`S3_BUCKET_NAME`), presigned TTL, max file size |
+| `app.kafka.topics.order-placed` | order/product | Topic name (`ORDER_PLACED_TOPIC`, default `order-placed`) |
 | `resilience4j.*` | order/product | Circuit breaker, retry, bulkhead tuning |
-| `management.*` | all + gateway | Actuator exposure, tracing sampling, Zipkin endpoint |
+| `management.*` | all app containers | Actuator exposure, tracing sampling, Zipkin endpoint |
 | `eureka.*` | all | Registry (`EUREKA_URL`), `prefer-ip-address: true` |
 
 Profiles: default (local dev) • `dev` (verbose SQL) • `prod` (fail-fast, env required) •
 `test` (containers, no tracing).
 
+Secrets runbook (`.env` → HashiCorp Vault → AWS Secrets Manager, with trade-offs):
+[`docs/secrets.md`](docs/secrets.md).
+
 ## Observability
 
-Every service and the gateway expose Actuator endpoints; Prometheus scrapes all four
-targets, traces flow to Zipkin, and Grafana is pre-provisioned with a Prometheus datasource.
+Every service, the gateway, and the Eureka server expose Actuator endpoints; Prometheus
+scrapes all five targets (`docker/prometheus/prometheus.yml`), traces flow to Zipkin, and
+Grafana is pre-provisioned with a Prometheus datasource.
 
 | What | Where |
 |---|---|
-| Health | `GET /actuator/health` on each service |
-| Metrics (Prometheus format) | `GET /actuator/prometheus` on each service |
-| Dashboards | Grafana http://localhost:3000 (datasource pre-wired) |
+| Health | `GET /actuator/health` on each service, the gateway, and service-discovery |
+| Metrics (Prometheus format) | `GET /actuator/prometheus` on the same five targets |
+| Dashboards | Grafana http://localhost:3000 (admin / admin by default, override with `GRAFANA_PASSWORD`) |
 | Scrape config | `docker/prometheus/prometheus.yml` |
 | Distributed traces | Zipkin http://localhost:9411 |
 
@@ -247,7 +262,7 @@ Custom business metrics:
 
 | Metric | Emitted by |
 |---|---|
-| `orders_total` | order-service, on each created order |
+| `orders_created_total` | order-service, on each created order |
 | `stock_decrement_total` | product-service, on each successful stock decrement |
 | `cache_hit_total` / `cache_miss_total` | product-service, per cache (`product`, `productList`) |
 | `resilience4j_*` | circuit breaker / retry / bulkhead state |
@@ -282,14 +297,17 @@ request can be followed from the gateway through a service and into the Kafka co
 ## Testing
 
 ```bash
-mvn verify              # unit + slices + Testcontainers integration + Spotless + JaCoCo gate
-mvn test -pl order-service -Dtest=OrderServiceTest   # single class
+./mvnw verify              # unit + slices + Testcontainers integration + Spotless + JaCoCo gate
+./mvnw test -pl order-service -Dtest=OrderServiceTest   # single class
 ```
 
 - Pyramid: plain unit tests → `@WebMvcTest` (security matrix) → `@DataJpaTest` (Flyway on
-  real Postgres) → `@SpringBootTest` integration (Postgres + Redis + Kafka containers).
-- Requires Docker for container tests. Gate: JaCoCo ≥70% line coverage on
-  `service`/`auth`/`event` packages.
+  real Postgres) → `@SpringBootTest` integration (Postgres + Redis + Kafka Testcontainers).
+- Requires Docker for container tests (postgres:16-alpine, apache/kafka:3.8.1 KRaft,
+  redis:7.4-alpine images).
+- Gates: JaCoCo ≥70% line coverage on `service`/`auth`/`event` packages; Spotless
+  (Google Java Format, AOSP) must pass.
+- Known gap: `api-gateway` has no tests yet (config-only module).
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for conventions.
 
