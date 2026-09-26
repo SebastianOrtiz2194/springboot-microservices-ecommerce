@@ -1,34 +1,151 @@
 {
   "info": {
     "name": "E-Commerce Platform",
-    "description": "API collection for the microservices e-commerce platform.\n\nRun order: Auth → Users → Products → Orders.\nBase URL points at the API Gateway (port 8080). Register/Login auto-save tokens into collection variables via test scripts.",
+    "description": "API collection for the microservices e-commerce platform, routed through the API Gateway (http://localhost:8080).\n\nRun order: 0. Infrastructure → 1. Auth → 2. Users → 3. Products → 4. Orders → 5. Guards.\n\nRegister generates a unique email per run (so the collection is re-runnable) and auto-saves tokens into collection variables; every other request inherits the bearer token from the collection auth. Requests marked (ADMIN) need the calling user's role to be ADMIN.\n\nExpected status codes are asserted with pm.test, so the Postman Runner shows pass/fail per request.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "baseUrl", "value": "http://localhost:8080" },
-    { "key": "accessToken", "value": "" },
-    { "key": "refreshToken", "value": "" }
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "refreshToken",
+      "value": ""
+    },
+    {
+      "key": "userEmail",
+      "value": ""
+    },
+    {
+      "key": "userId",
+      "value": ""
+    },
+    {
+      "key": "productId",
+      "value": ""
+    },
+    {
+      "key": "orderId",
+      "value": ""
+    }
   ],
   "auth": {
     "type": "bearer",
-    "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
   },
   "item": [
     {
-      "name": "Auth",
+      "name": "0. Infrastructure",
+      "description": "No authentication. Proves the platform itself is up before touching the API.",
       "item": [
         {
-          "name": "Register",
+          "name": "Gateway health",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/actuator/health",
+            "auth": { "type": "noauth" }
+          },
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "if (pm.response.code === 201) {",
+                  "pm.test('gateway is UP', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().status).to.eql('UP');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Service-discovery health (compose readiness gate)",
+          "request": {
+            "method": "GET",
+            "url": "http://localhost:8761/actuator/health",
+            "auth": { "type": "noauth" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('eureka is UP', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().status).to.eql('UP');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Service-discovery prometheus metrics",
+          "request": {
+            "method": "GET",
+            "url": "http://localhost:8761/actuator/prometheus",
+            "auth": { "type": "noauth" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('exposes Prometheus scrape format', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.text()).to.include('# TYPE');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "1. Auth",
+      "description": "All three endpoints are public. Register generates a unique email per run and stores tokens; Refresh re-issues the access token.",
+      "item": [
+        {
+          "name": "Register (public, unique email per run)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const email = 'user-' + Date.now() + '@example.com';",
+                  "pm.collectionVariables.set('userEmail', email);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('201 created', () => pm.response.to.have.status(201));",
+                  "pm.test('tokens issued', () => {",
                   "  const json = pm.response.json();",
+                  "  pm.expect(json.tokenType).to.eql('Bearer');",
+                  "  pm.expect(json.accessToken).to.be.a('string').and.not.empty;",
+                  "  pm.expect(json.refreshToken).to.be.a('string').and.not.empty;",
                   "  pm.collectionVariables.set('accessToken', json.accessToken);",
                   "  pm.collectionVariables.set('refreshToken', json.refreshToken);",
-                  "}"
+                  "});"
                 ]
               }
             }
@@ -40,23 +157,25 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Alice\",\n  \"email\": \"alice@example.com\",\n  \"password\": \"s3cret-password\"\n}"
+              "raw": "{\n  \"name\": \"Alice\",\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"s3cret-password\"\n}"
             }
           },
           "response": []
         },
         {
-          "name": "Login",
+          "name": "Login (public)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "if (pm.response.code === 200) {",
+                  "pm.test('200 ok', () => pm.response.to.have.status(200));",
+                  "pm.test('tokens issued', () => {",
                   "  const json = pm.response.json();",
+                  "  pm.expect(json.accessToken).to.be.a('string').and.not.empty;",
                   "  pm.collectionVariables.set('accessToken', json.accessToken);",
                   "  pm.collectionVariables.set('refreshToken', json.refreshToken);",
-                  "}"
+                  "});"
                 ]
               }
             }
@@ -68,13 +187,28 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"alice@example.com\",\n  \"password\": \"s3cret-password\"\n}"
+              "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"s3cret-password\"\n}"
             }
           },
           "response": []
         },
         {
-          "name": "Refresh",
+          "name": "Refresh (new access token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 ok', () => pm.response.to.have.status(200));",
+                  "pm.test('new access token stored', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.accessToken).to.be.a('string').and.not.empty;",
+                  "  pm.collectionVariables.set('accessToken', json.accessToken);",
+                  "});"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "url": "{{baseUrl}}/api/auth/refresh",
@@ -86,31 +220,88 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Login with wrong password (404)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "auth": { "type": "noauth" },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"wrong-password\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('404 unknown email or wrong password', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "response": []
         }
       ]
     },
     {
-      "name": "Users",
+      "name": "2. Users",
+      "description": "Reads require USER or ADMIN. Create user requires ADMIN (promote a user first — see docs/verification-guide.md step 2.4).",
       "item": [
         {
-          "name": "List users",
+          "name": "List users (USER+)",
           "request": { "method": "GET", "url": "{{baseUrl}}/api/users" },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('200 ok', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ],
           "response": []
         },
         {
-          "name": "Get user by id",
+          "name": "Get user by id (USER+)",
           "request": { "method": "GET", "url": "{{baseUrl}}/api/users/1" },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 ok', () => pm.response.to.have.status(200));",
+                  "pm.test('password never exposed', () => pm.expect(pm.response.json()).to.not.have.property('password'));"
+                ]
+              }
+            }
+          ],
           "response": []
         },
         {
           "name": "Create user (ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('201 created', () => pm.response.to.have.status(201));",
+                  "pm.test('user id captured', () => {",
+                  "  pm.collectionVariables.set('userId', pm.response.json().id);",
+                  "});"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "url": "{{baseUrl}}/api/users",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Bob\",\n  \"email\": \"bob@example.com\",\n  \"password\": \"s3cret-password\",\n  \"role\": \"USER\"\n}"
+              "raw": "{\n  \"name\": \"Bob\",\n  \"email\": \"bob-{{userEmail}}\",\n  \"password\": \"s3cret-password\",\n  \"role\": \"USER\"\n}"
             }
           },
           "response": []
@@ -118,20 +309,58 @@
       ]
     },
     {
-      "name": "Products",
+      "name": "3. Products",
+      "description": "Reads require USER or ADMIN. Create product and image upload require ADMIN. Image upload is multipart (JPEG/PNG/WebP, max 5MB) and needs real S3 credentials to succeed.",
       "item": [
         {
-          "name": "List products",
+          "name": "List products (USER+)",
           "request": { "method": "GET", "url": "{{baseUrl}}/api/products" },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 ok', () => pm.response.to.have.status(200));",
+                  "pm.test('catalog is seeded', () => pm.expect(pm.response.json().length).to.be.above(0));"
+                ]
+              }
+            }
+          ],
           "response": []
         },
         {
-          "name": "Get product by id",
+          "name": "Get product by id (USER+)",
           "request": { "method": "GET", "url": "{{baseUrl}}/api/products/1" },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 ok', () => pm.response.to.have.status(200));",
+                  "pm.test('product id captured', () => {",
+                  "  pm.collectionVariables.set('productId', pm.response.json().id);",
+                  "});"
+                ]
+              }
+            }
+          ],
           "response": []
         },
         {
           "name": "Create product (ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('201 created', () => pm.response.to.have.status(201));",
+                  "pm.test('product id captured', () => {",
+                  "  pm.collectionVariables.set('productId', pm.response.json().id);",
+                  "});"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "url": "{{baseUrl}}/api/products",
@@ -144,24 +373,58 @@
           "response": []
         },
         {
-          "name": "Upload product image (ADMIN)",
+          "name": "Upload product image (ADMIN, multipart)",
           "request": {
             "method": "POST",
             "url": "{{baseUrl}}/api/products/1/image",
             "body": {
               "mode": "formdata",
-              "formdata": [{ "key": "file", "type": "file", "src": [] }]
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "Attach a JPEG/PNG/WebP image (max 5MB)"
+                }
+              ]
             }
           },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 ok', () => pm.response.to.have.status(200));",
+                  "pm.test('returns imageUrl', () => pm.expect(pm.response.json()).to.have.property('imageUrl'));"
+                ]
+              }
+            }
+          ],
           "response": []
         }
       ]
     },
     {
-      "name": "Orders",
+      "name": "4. Orders",
+      "description": "All order endpoints require USER or ADMIN. Creating an order publishes OrderPlacedEvent to Kafka; product stock drops asynchronously shortly after.",
       "item": [
         {
           "name": "Create order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('201 created', () => pm.response.to.have.status(201));",
+                  "pm.test('order saved and event published', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.status).to.eql('CREATED');",
+                  "  pm.collectionVariables.set('orderId', json.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "url": "{{baseUrl}}/api/orders",
@@ -176,17 +439,115 @@
         {
           "name": "List my orders",
           "request": { "method": "GET", "url": "{{baseUrl}}/api/orders" },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 ok', () => pm.response.to.have.status(200));",
+                  "pm.test('only own orders returned', () => {",
+                  "  const orders = pm.response.json();",
+                  "  orders.forEach((o) => pm.expect(o).to.have.property('items'));",
+                  "});"
+                ]
+              }
+            }
+          ],
           "response": []
         },
         {
           "name": "Get order by id",
-          "request": { "method": "GET", "url": "{{baseUrl}}/api/orders/1" },
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/orders/{{orderId}}" },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('200 ok', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ],
           "response": []
         }
       ]
     },
     {
-      "name": "Docs and Health",
+      "name": "5. Guards (negative cases)",
+      "description": "Proves the fail-fast contracts: 409 duplicate email, 400 empty order items, 401 missing token.",
+      "item": [
+        {
+          "name": "Register same email again (409)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/register",
+            "auth": { "type": "noauth" },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Alice\",\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"s3cret-password\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('409 email already registered', () => {",
+                  "  pm.response.to.have.status(409);",
+                  "  pm.expect(pm.response.json().title).to.eql('Conflict');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Create order with empty items (400)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/orders",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"items\": []\n}" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('400 rejected before persisting', () => {",
+                  "  pm.response.to.have.status(400);",
+                  "  pm.expect(pm.response.json().title).to.eql('Validation failed');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Get products without token (403, Spring default body)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/products",
+            "auth": { "type": "noauth" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('403 forbidden for anonymous caller', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "6. Docs",
+      "description": "OpenAPI aggregation through the gateway. No authentication.",
       "item": [
         {
           "name": "Gateway Swagger UI",
