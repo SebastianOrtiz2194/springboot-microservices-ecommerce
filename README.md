@@ -82,7 +82,8 @@ docker compose up --build -d
 | Prometheus | http://localhost:9090 |
 | Zipkin (distributed traces) | http://localhost:9411 |
 
-Check the stack with `docker compose ps` (every container should report `healthy`).
+Check the stack with `docker compose ps` — every service that defines a healthcheck should
+report `healthy` (grafana and prometheus define none).
 
 ```bash
 docker compose down       # stop
