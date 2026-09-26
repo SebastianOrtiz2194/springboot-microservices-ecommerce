@@ -186,7 +186,9 @@ Full interactive docs with schemas and response codes: gateway Swagger UI.
 Static specs: [`docs/openapi-user.yaml`](docs/openapi-user.yaml),
 [`docs/openapi-product.yaml`](docs/openapi-product.yaml),
 [`docs/openapi-order.yaml`](docs/openapi-order.yaml).
-Postman: [`docs/postman_collection.json`](docs/postman_collection.json) (tokens auto-captured).
+Postman: [`docs/postman_collection.json`](docs/postman_collection.json) (tokens auto-captured,
+assertions included). Step-by-step walkthrough of every endpoint with curl examples and real
+responses: [`docs/verification-guide.md`](docs/verification-guide.md).
 
 ## Project Structure
 
