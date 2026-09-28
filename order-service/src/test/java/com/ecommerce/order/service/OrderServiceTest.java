@@ -105,12 +105,37 @@ class OrderServiceTest {
     }
 
     @Test
-    void getOrderById_returnsOrderWhenFound() {
+    void getOrderById_returnsOwnOrderForRequester() {
         Order order = new Order();
         order.setId(1L);
+        order.setUserId(7L);
         when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
 
-        Order result = orderService.getOrderById(1L);
+        Order result = orderService.getOrderById(1L, 7L, false);
+
+        assertThat(result).isSameAs(order);
+    }
+
+    @Test
+    void getOrderById_hidesForeignOrderFromNonAdmin() {
+        Order order = new Order();
+        order.setId(1L);
+        order.setUserId(7L);
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> orderService.getOrderById(1L, 99L, false))
+                .isInstanceOf(OrderNotFoundException.class)
+                .hasMessageContaining("1");
+    }
+
+    @Test
+    void getOrderById_allowsAdminToReadAnyOrder() {
+        Order order = new Order();
+        order.setId(1L);
+        order.setUserId(7L);
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        Order result = orderService.getOrderById(1L, 99L, true);
 
         assertThat(result).isSameAs(order);
     }
@@ -119,7 +144,7 @@ class OrderServiceTest {
     void getOrderById_throwsWhenNotFound() {
         when(orderRepository.findById(42L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> orderService.getOrderById(42L))
+        assertThatThrownBy(() -> orderService.getOrderById(42L, 7L, false))
                 .isInstanceOf(OrderNotFoundException.class)
                 .hasMessageContaining("42");
     }
