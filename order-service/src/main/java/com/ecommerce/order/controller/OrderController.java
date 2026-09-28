@@ -18,6 +18,7 @@ import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -69,23 +70,33 @@ public class OrderController {
     }
 
     /**
-     * Retrieves an order by ID.
+     * Retrieves an order by ID. Callers can only read their own orders; ADMIN can read any.
      *
      * @param id the order identifier
+     * @param auth the authenticated user's security context
      * @return the order
      */
-    @Operation(summary = "Get an order by ID")
+    @Operation(
+            summary = "Get an order by ID",
+            description = "Callers may only read their own orders; ADMIN may read any order")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Order found"),
         @ApiResponse(responseCode = "400", description = "Invalid ID"),
         @ApiResponse(
                 responseCode = "404",
-                description = "Order not found",
+                description = "Order not found or not owned by the caller",
                 content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     })
     @GetMapping("/{id}")
-    public OrderResponse getOrder(@Positive @PathVariable Long id) {
-        return orderMapper.toResponse(orderService.getOrderById(id));
+    public OrderResponse getOrder(@Positive @PathVariable Long id, Authentication auth) {
+        return orderMapper.toResponse(
+                orderService.getOrderById(id, (Long) auth.getDetails(), isAdmin(auth)));
+    }
+
+    private static boolean isAdmin(Authentication auth) {
+        return auth.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch("ROLE_ADMIN"::equals);
     }
 
     /**

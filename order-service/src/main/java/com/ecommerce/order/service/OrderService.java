@@ -10,6 +10,7 @@ import com.ecommerce.order.exception.OrderNotFoundException;
 import com.ecommerce.order.repository.OrderRepository;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.List;
+import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -86,15 +87,29 @@ public class OrderService {
     }
 
     /**
-     * Retrieves an order by its ID.
+     * Retrieves an order on behalf of a specific caller. Callers may only read their own orders
+     * unless they act as ADMIN; a foreign order is reported as missing so order IDs cannot be
+     * probed across accounts (resource enumeration).
      *
      * @param id the order identifier
+     * @param requesterId the caller's user ID taken from the JWT
+     * @param admin whether the caller holds the ADMIN role
      * @return the matching order
-     * @throws OrderNotFoundException if no order exists
+     * @throws OrderNotFoundException if no order exists or the caller does not own it
      */
-    public Order getOrderById(Long id) {
-        log.info("get_order id={}", id);
-        return orderRepository.findById(id).orElseThrow(() -> new OrderNotFoundException(id));
+    public Order getOrderById(Long id, Long requesterId, boolean admin) {
+        log.info("get_order id={} requester_id={} admin={}", id, requesterId, admin);
+        Order order =
+                orderRepository.findById(id).orElseThrow(() -> new OrderNotFoundException(id));
+        if (!admin && !Objects.equals(order.getUserId(), requesterId)) {
+            log.warn(
+                    "order_access_denied order_id={} requester_id={} owner_id={}",
+                    id,
+                    requesterId,
+                    order.getUserId());
+            throw new OrderNotFoundException(id);
+        }
+        return order;
     }
 
     /**
