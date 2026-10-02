@@ -180,7 +180,7 @@ use `POST /api/auth/register` above to get a working account and tokens.
 |--------|-------------------|------------------------------------------|
 | POST   | `/api/orders`     | Create order, publishes `OrderPlacedEvent` (400 if `items` is empty) |
 | GET    | `/api/orders`     | List my orders                           |
-| GET    | `/api/orders/{id}`| Get order by ID                          |
+| GET    | `/api/orders/{id}`| Get order by ID (owner only; ADMIN: any)  |
 
 Full interactive docs with schemas and response codes: gateway Swagger UI.
 Static specs: [`docs/openapi-user.yaml`](docs/openapi-user.yaml),
@@ -276,6 +276,9 @@ request can be followed from the gateway through a service and into the Kafka co
 ## Design Decisions (interview notes)
 
 - **DTOs + MapStruct, never entities in APIs** — decouples persistence from contract.
+- **Ownership-scoped reads, 404 over 403** — `GET /api/orders/{id}` only answers for the
+  order's owner (ADMIN excepted) and reports foreign orders as *not found*, so order IDs
+  can't be probed across accounts; the same reasoning applies to 404 on failed login.
 - **RFC 7807 `ProblemDetail` globally** — one error shape everywhere, including 503 for
   downstream outages (retryable) vs 4xx for client errors.
 - **Atomic `UPDATE ... WHERE stock >= qty`** + `@Version` — no oversell under concurrency;

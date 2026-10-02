@@ -66,6 +66,7 @@ paths:
       tags:
       - orders
       summary: Get an order by ID
+      description: Callers may only read their own orders; ADMIN may read any order
       operationId: getOrder
       parameters:
       - name: id
@@ -88,7 +89,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/OrderResponse"
         "404":
-          description: Order not found
+          description: Order not found or not owned by the caller
           content:
             '*/*':
               schema:

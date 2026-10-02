@@ -395,13 +395,15 @@ curl -s $BASE/api/orders -H "Authorization: Bearer $ACCESS"
 
 ### 6.3 Get order by id — `GET /api/orders/{id}`
 
-**Auth:** `USER` or `ADMIN`.
+**Auth:** the **owner** of the order, or `ADMIN`. Reading someone else's order returns `404`
+with the exact same body as a missing order, so order IDs cannot be probed across accounts.
 
 ```bash
 curl -s $BASE/api/orders/5 -H "Authorization: Bearer $ACCESS"
 ```
 
-**Response `200 OK`:** single order object. Unknown id → `404`.
+**Response `200 OK`:** single order object. Unknown id **or another user's order** → `404`
+(see §7). An `ADMIN` token reads any order.
 
 ### 6.4 Verify the async stock decrement (Kafka flow)
 
@@ -432,6 +434,7 @@ Success responses are plain JSON DTOs; error responses are **RFC 7807 `ProblemDe
 | Refresh with a bogus token | `400` | `{"type":"about:blank","title":"Bad request","status":400,"detail":"Invalid or expired refresh token","instance":"/api/auth/refresh"}` |
 | Login with wrong password / unknown email | `404` | `{"type":"about:blank","title":"User not found","status":404,"detail":"User not found with email: ...","instance":"/api/auth/login"}` |
 | `GET /api/users/99999` | `404` | `{"type":"about:blank","title":"User not found","status":404,"detail":"User not found with id: 99999","instance":"/api/users/99999"}` |
+| `GET /api/orders/{id}` of another user | `404` | `{"type":"about:blank","title":"Order not found","status":404,"detail":"Order not found with id: 6","instance":"/api/orders/6"}` (identical to a missing order — see §6.3) |
 | Write endpoint as `USER` (e.g. create product) | `403` | `{"timestamp":"...","status":403,"error":"Forbidden","path":"/api/products"}` |
 | Request with **no** token | `403` | `{"timestamp":"...","status":403,"error":"Forbidden","path":"/api/products"}` |
 
@@ -486,6 +489,7 @@ docker compose down -v     # stop and wipe databases, Kafka, Grafana state
 - [ ] `:8761/actuator/health` UP, `:8761/actuator/prometheus` serves metrics
 - [ ] Register + login + refresh all return tokens; refresh issues a new access token
 - [ ] Duplicate register → 409; empty order → 400; no token → 403; bad login → 404
+- [ ] Order lookup is owner-scoped: another user's order → 404, ADMIN → 200
 - [ ] Users: list + get work as USER; create works as ADMIN
 - [ ] Products: list + get work as USER; create + image upload work as ADMIN
 - [ ] Orders: create → appears in `GET /api/orders`; stock drops within seconds (Kafka)

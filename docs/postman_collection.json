@@ -457,7 +457,11 @@
         },
         {
           "name": "Get order by id",
-          "request": { "method": "GET", "url": "{{baseUrl}}/api/orders/{{orderId}}" },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/orders/{{orderId}}",
+            "description": "Returns the order only if the caller owns it. Another user's order (or an unknown id) returns 404 with the same body, so ids cannot be probed; ADMIN may read any order."
+          },
           "event": [
             {
               "listen": "test",
