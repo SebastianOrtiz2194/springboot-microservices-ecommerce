@@ -136,6 +136,9 @@ services:
     environment:
       EUREKA_URL: http://service-discovery:8761/eureka
       ZIPKIN_URL: http://zipkin:9411/api/v2/spans
+      JWT_SECRET: ${JWT_SECRET}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     depends_on:
       service-discovery: { condition: service_healthy }
       user-service: { condition: service_started }

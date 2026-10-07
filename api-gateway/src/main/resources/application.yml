@@ -6,6 +6,10 @@ spring:
     name: api-gateway
   autoconfigure:
     exclude: org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
   cloud:
     gateway:
       httpclient:
@@ -16,18 +20,42 @@ spring:
           uri: lb://user-service
           predicates:
             - Path=/api/auth/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: ${AUTH_RATE_LIMIT_REPLENISH:5}
+                redis-rate-limiter.burstCapacity: ${AUTH_RATE_LIMIT_BURST:10}
+                key-resolver: "#{@ipKeyResolver}"
         - id: user-service
           uri: lb://user-service
           predicates:
             - Path=/api/users/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: ${RATE_LIMIT_REPLENISH:10}
+                redis-rate-limiter.burstCapacity: ${RATE_LIMIT_BURST:20}
+                key-resolver: "#{@userKeyResolver}"
         - id: product-service
           uri: lb://product-service
           predicates:
             - Path=/api/products/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: ${RATE_LIMIT_REPLENISH:10}
+                redis-rate-limiter.burstCapacity: ${RATE_LIMIT_BURST:20}
+                key-resolver: "#{@userKeyResolver}"
         - id: order-service
           uri: lb://order-service
           predicates:
             - Path=/api/orders/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: ${RATE_LIMIT_REPLENISH:10}
+                redis-rate-limiter.burstCapacity: ${RATE_LIMIT_BURST:20}
+                key-resolver: "#{@userKeyResolver}"
         - id: user-api-docs
           uri: lb://user-service
           predicates:
@@ -66,6 +94,10 @@ eureka:
   client:
     service-url:
       defaultZone: ${EUREKA_URL:http://localhost:8761/eureka}
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:dev-secret-key-that-is-at-least-32-chars-long-for-local-dev-only-please-change}
 
 management:
   endpoints:
