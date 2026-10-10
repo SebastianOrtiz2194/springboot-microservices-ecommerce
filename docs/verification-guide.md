@@ -17,7 +17,9 @@ Two ways to follow along:
 ## 0. Endpoint and auth map
 
 All API traffic goes through the **API Gateway** (`http://localhost:8080`). Authentication
-is a JWT bearer token obtained from `/api/auth/login` or `/api/auth/register`.
+is a JWT bearer token obtained from `/api/auth/login` or `/api/auth/register`; the gateway
+validates it before routing (`401` + `ProblemDetail` when missing/invalid) and rate-limits
+each route (`429` beyond the burst capacity — see §7).
 
 | # | Method | Endpoint | Who can call it | Body |
 |---|--------|----------|-----------------|------|
@@ -436,12 +438,13 @@ Success responses are plain JSON DTOs; error responses are **RFC 7807 `ProblemDe
 | `GET /api/users/99999` | `404` | `{"type":"about:blank","title":"User not found","status":404,"detail":"User not found with id: 99999","instance":"/api/users/99999"}` |
 | `GET /api/orders/{id}` of another user | `404` | `{"type":"about:blank","title":"Order not found","status":404,"detail":"Order not found with id: 6","instance":"/api/orders/6"}` (identical to a missing order — see §6.3) |
 | Write endpoint as `USER` (e.g. create product) | `403` | `{"timestamp":"...","status":403,"error":"Forbidden","path":"/api/products"}` |
-| Request with **no** token | `403` | `{"timestamp":"...","status":403,"error":"Forbidden","path":"/api/products"}` |
+| Request with **no** token (or a bad one) | `401` | `{"type":"about:blank","title":"Unauthorized","status":401,"detail":"Missing bearer token","instance":"/api/products"}` — answered **by the gateway**, before routing (bad token: `"Invalid or expired token"`) |
+| Burst beyond the rate-limit bucket | `429` | empty body + `X-RateLimit-*` headers on the allowed calls; the gateway answers `429 Too Many Requests` |
 
-> **Known inconsistency (follow-up item):** anonymous/forbidden requests are rejected inside
-> the Spring Security filter chain, so they return the framework's default error body with
-> `403` instead of a `401`/`403` `ProblemDetail`. Everything handled by the application
-> layer is RFC 7807. Unifying the filter-chain responses is a pending hardening item.
+> **Known inconsistency (follow-up item):** role-based `403`s are still rejected inside the
+> services' Spring Security filter chain, so they use the framework's default error body
+> instead of a `403` `ProblemDetail`. Missing/invalid credentials are now clean (`401`
+> `ProblemDetail` at the gateway), and everything the application layer raises is RFC 7807.
 
 Quick reproductions:
 
@@ -452,8 +455,14 @@ curl -s -X POST $BASE/api/auth/register -H 'Content-Type: application/json' \
 # 400 empty order
 curl -s -X POST $BASE/api/orders -H "Authorization: Bearer $ACCESS" \
   -H 'Content-Type: application/json' -d '{"items":[]}'
-# 403 no token
+# 401 no token (gateway rejects before routing)
 curl -s $BASE/api/products
+# 401 forged token
+curl -s $BASE/api/products -H "Authorization: Bearer not-a-jwt"
+# 429 burst: fire more requests than the bucket allows (burst 20 on business routes,
+# 10 on /api/auth/**, ~10/s refill). 30 concurrent authorized calls yield ~20x200 + 10x429
+for i in $(seq 1 30); do curl -s -o /dev/null -w "%{http_code}\n" $BASE/api/products \
+  -H "Authorization: Bearer $ACCESS" & done; wait
 ```
 
 ---
@@ -469,7 +478,7 @@ curl -s $BASE/api/products
    4. Orders → 5. Guards → 6. Docs`.
 4. Use the **Collection Runner** for a one-click pass/fail report — every request carries a
    status assertion (e.g. `Register` must return 201 and issue tokens; `Guards` must return
-   409/400/403).
+   409/400/401).
 
 ADMIN-only requests (`Create user`, `Create product`, `Upload image`) return `403` until the
 account behind `{{accessToken}}` is promoted (§3.5) and you re-run `1. Auth → Login`.
@@ -488,7 +497,8 @@ docker compose down -v     # stop and wipe databases, Kafka, Grafana state
 - [ ] `docker compose ps` — all healthchecked services `healthy`
 - [ ] `:8761/actuator/health` UP, `:8761/actuator/prometheus` serves metrics
 - [ ] Register + login + refresh all return tokens; refresh issues a new access token
-- [ ] Duplicate register → 409; empty order → 400; no token → 403; bad login → 404
+- [ ] Duplicate register → 409; empty order → 400; bad login → 404
+- [ ] No/invalid token → 401 (gateway, RFC 7807); too-large burst → 429
 - [ ] Order lookup is owner-scoped: another user's order → 404, ADMIN → 200
 - [ ] Users: list + get work as USER; create works as ADMIN
 - [ ] Products: list + get work as USER; create + image upload work as ADMIN

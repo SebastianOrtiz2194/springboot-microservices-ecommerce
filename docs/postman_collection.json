@@ -476,7 +476,7 @@
     },
     {
       "name": "5. Guards (negative cases)",
-      "description": "Proves the fail-fast contracts: 409 duplicate email, 400 empty order items, 401 missing token.",
+      "description": "Proves the fail-fast contracts: 409 duplicate email, 400 empty order items, 401 missing token at the gateway. (Rate limiting: exceed the burst capacity — 20 on business routes, 10 on /api/auth/** — with concurrent requests to see 429.)",
       "item": [
         {
           "name": "Register same email again (409)",
@@ -529,18 +529,22 @@
           "response": []
         },
         {
-          "name": "Get products without token (403, Spring default body)",
+          "name": "Get products without token (401 at the gateway)",
           "request": {
             "method": "GET",
             "url": "{{baseUrl}}/api/products",
-            "auth": { "type": "noauth" }
+            "auth": { "type": "noauth" },
+            "description": "The gateway rejects missing/invalid bearer tokens before routing, with an RFC 7807 body."
           },
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('403 forbidden for anonymous caller', () => pm.response.to.have.status(403));"
+                  "pm.test('401 unauthorized at the edge', () => {",
+                  "  pm.response.to.have.status(401);",
+                  "  pm.expect(pm.response.json().title).to.eql('Unauthorized');",
+                  "});"
                 ]
               }
             }

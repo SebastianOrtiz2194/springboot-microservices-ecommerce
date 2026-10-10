@@ -17,7 +17,7 @@ discovery, JWT auth, event-driven stock management, and full observability.
                                      │
      Client ──► ┌────────────────────▼───────────────────┐
                 │   API Gateway (8080)                    │
-                │   routing • timeouts • swagger aggregate │
+                │   routing • edge JWT • rate limit • timeouts • swagger │
                 └───┬───────────────┬─────────────┬───────┘
                     │               │             │
           ┌─────────▼─────┐  ┌──────▼──────┐  ┌───▼─────────┐
@@ -42,7 +42,7 @@ discovery, JWT auth, event-driven stock management, and full observability.
 | Layer        | Choice                                                        |
 |--------------|---------------------------------------------------------------|
 | Runtime      | Java 21, Spring Boot 3.3.4, Spring Cloud 2023.0.3             |
-| Gateway      | Spring Cloud Gateway (reactive) + Eureka discovery            |
+| Gateway      | Spring Cloud Gateway (reactive) + Eureka discovery, edge JWT validation, Redis rate limiting |
 | Auth         | Spring Security, BCrypt, JWT access (15m) + refresh (7d)      |
 | Data         | PostgreSQL per service, Flyway migrations (`ddl-auto: validate`) |
 | Cache        | Redis (product catalog, 10m TTL, JSON serialization)          |
@@ -232,9 +232,10 @@ Packages are organized **by feature** (`user`, `product`, `order`), not by layer
 | Property | Location | Description |
 |---|---|---|
 | `spring.datasource.*` | user/product/order | PostgreSQL (`DB_URL/DB_USERNAME/DB_PASSWORD`) |
-| `spring.data.redis.*` | product-service | Redis (`REDIS_HOST/REDIS_PORT`) |
+| `spring.data.redis.*` | product-service, api-gateway | Redis cache (`REDIS_HOST/REDIS_PORT`) + rate limiter |
 | `spring.kafka.*` | order/product | Broker (`KAFKA_BOOTSTRAP_SERVERS`) + timeouts |
-| `app.jwt.secret` | user/product/order | JWT signing key, min 32 bytes (`JWT_SECRET`) |
+| `app.jwt.secret` | gateway + user/product/order | JWT signing key, min 32 bytes (`JWT_SECRET`) |
+| `redis-rate-limiter.*` | api-gateway | Bucket per route: `RATE_LIMIT_*` (10/s, burst 20) and `AUTH_RATE_LIMIT_*` (5/s, burst 10, keyed per IP) |
 | `app.s3.*` | product-service | Bucket (`S3_BUCKET_NAME`), presigned TTL, max file size |
 | `app.kafka.topics.order-placed` | order/product | Topic name (`ORDER_PLACED_TOPIC`, default `order-placed`) |
 | `resilience4j.*` | order/product | Circuit breaker, retry, bulkhead tuning |
@@ -276,6 +277,10 @@ request can be followed from the gateway through a service and into the Kafka co
 ## Design Decisions (interview notes)
 
 - **DTOs + MapStruct, never entities in APIs** — decouples persistence from contract.
+- **Edge auth + per-user rate limiting at the gateway** — invalid/missing tokens are rejected
+  before routing with `401` + `ProblemDetail` (nothing reaches a service), auth endpoints are
+  throttled per IP to slow brute force, business endpoints per user so one account cannot
+  starve the rest; services still re-validate the JWT (defence in depth).
 - **Ownership-scoped reads, 404 over 403** — `GET /api/orders/{id}` only answers for the
   order's owner (ADMIN excepted) and reports foreign orders as *not found*, so order IDs
   can't be probed across accounts; the same reasoning applies to 404 on failed login.
@@ -313,7 +318,8 @@ request can be followed from the gateway through a service and into the Kafka co
   redis:7.4-alpine images).
 - Gates: JaCoCo ≥70% line coverage on `service`/`auth`/`event` packages; Spotless
   (Google Java Format, AOSP) must pass.
-- Known gap: `api-gateway` has no tests yet (config-only module).
+- `api-gateway` is covered by unit tests (edge auth filter, rate-limit keys) and a
+  Testcontainers-backed rate-limiter integration test (Redis).
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for conventions.
 
