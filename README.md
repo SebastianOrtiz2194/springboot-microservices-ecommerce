@@ -28,7 +28,7 @@ discovery, JWT auth, event-driven stock management, and full observability.
            │                   │ │  Redis cache      │ │                   │
            └───────────────────┘ └─────────┬─────────┘ └─────────┬─────────┘
                                            │                     │
-                          ┌────────────────▼─────────────────────▼────────┘
+                          ┌────────────────▼─────────────────────▼────────┐
                           │             Kafka (events) KRaft              │
                           │         OrderPlaced → product-service         │
                           └───────────────────────────────────────────────┘
