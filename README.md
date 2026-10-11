@@ -11,27 +11,27 @@ discovery, JWT auth, event-driven stock management, and full observability.
 ## Architecture
 
 ```
-                            ┌─────────────────┐
-                            │  Eureka (8761)  │
-                            └────────┬────────┘
-                                     │
-     Client ──► ┌────────────────────▼───────────────────┐
-                │   API Gateway (8080)                    │
-                │   routing • edge JWT • rate limit • timeouts • swagger │
-                └───┬───────────────┬─────────────┬───────┘
-                    │               │             │
-          ┌─────────▼─────┐  ┌──────▼──────┐  ┌───▼─────────┐
-          │ user-service  │  │product-svc  │  │order-service│
-          │ (8081)        │  │ (8082)      │  │ (8083)      │
-          │ Auth + JWT    │  │ Catalog     │  │ Orders      │
-          │ Postgres      │  │ Postgres    │  │ Postgres    │
-          │               │  │ Redis cache │  │             │
-          └───────────────┘  └──────┬──────┘  └──────┬──────┘
-                                    │                │
-                            ┌───────▼────────────────▼──────┐
-                            │       Kafka (events) KRaft    │
-                            │ OrderPlaced → product-service │
-                            └───────────────────────────────┘
+                                    ┌─────────────────┐
+                                    │  Eureka (8761)  │
+                                    └────────┬────────┘
+                                             │
+     Client ──► ┌────────────────────────────▼──────────────────────────────┐
+                │                    API Gateway (8080)                     │
+                │   routing • edge JWT • rate limit • timeouts • swagger    │
+                └────┬─────────────────────┬─────────────────────┬──────────┘
+                     │                     │                     │
+           ┌─────────▼─────────┐ ┌─────────▼─────────┐ ┌─────────▼─────────┐
+           │  user-service     │ │  product-service  │ │  order-service    │
+           │  (8081)           │ │  (8082)           │ │  (8083)           │
+           │  Auth + JWT       │ │  Catalog          │ │  Orders           │
+           │  Postgres         │ │  Postgres         │ │  Postgres         │
+           │                   │ │  Redis cache      │ │                   │
+           └───────────────────┘ └─────────┬─────────┘ └─────────┬─────────┘
+                                           │                     │
+                          ┌────────────────▼─────────────────────▼────────┘
+                          │             Kafka (events) KRaft              │
+                          │         OrderPlaced → product-service         │
+                          └───────────────────────────────────────────────┘
 
      Observability: Actuator • Prometheus • Zipkin • custom business metrics
      Resilience: CircuitBreaker (order publish) • Retry (S3) • Bulkhead (reads)
