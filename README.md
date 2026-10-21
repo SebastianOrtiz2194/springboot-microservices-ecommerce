@@ -305,6 +305,20 @@ request can be followed from the gateway through a service and into the Kafka co
 - **Fail-fast secrets** — empty/weak JWT keys and missing prod env vars crash at startup
   with a clear message instead of obscure runtime errors.
 
+## Screenshots
+
+| Aggregated Swagger UI (gateway) | Business metrics (Grafana) |
+|---|---|
+| ![Swagger UI](docs/screenshots/swagger-ui.png) | ![Grafana dashboard](docs/screenshots/grafana-dashboard.png) |
+
+| Distributed trace — gateway → order-service (Zipkin) | Trace search by service and span |
+|---|---|
+| ![Zipkin trace waterfall](docs/screenshots/zipkin-detail.png) | ![Zipkin trace search](docs/screenshots/zipkin-traces.png) |
+
+| Eureka service registry |
+|---|
+| ![Eureka](docs/screenshots/eureka.png) |
+
 ## Testing
 
 ```bash
