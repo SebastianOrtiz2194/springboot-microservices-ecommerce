@@ -110,8 +110,13 @@ services:
     environment:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      # Showcase mode: dashboards viewable without login (admin login still available)
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
     volumes:
       - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
+      # Business dashboard(s) auto-loaded on startup (see provisioning/dashboards)
+      - ./docker/grafana/dashboards:/var/lib/grafana/dashboards:ro
       - grafana-data:/var/lib/grafana
     depends_on:
       - prometheus

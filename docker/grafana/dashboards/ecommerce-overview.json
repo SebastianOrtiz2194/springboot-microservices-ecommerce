@@ -1,0 +1,182 @@
+{
+  "uid": "ecommerce-overview",
+  "title": "E-Commerce Platform — Business Overview",
+  "description": "Business and platform metrics: orders, stock decrements, cache efficiency, request traffic and resilience4j circuit breaker state.",
+  "tags": ["ecommerce", "business"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "refresh": "10s",
+  "time": { "from": "now-15m", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Orders created",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "x": 0, "y": 0, "w": 8, "h": 6 },
+      "targets": [
+        { "refId": "A", "expr": "orders_total", "instant": true }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 80 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "graphMode": "area",
+        "colorMode": "value",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Stock decrements (Kafka)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "x": 8, "y": 0, "w": 8, "h": 6 },
+      "targets": [
+        { "refId": "A", "expr": "stock_decrement_total", "instant": true }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "blue", "value": null }]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "graphMode": "area",
+        "colorMode": "value",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Redis cache hit rate",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "x": 16, "y": 0, "w": 8, "h": 6 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "100 * sum(cache_hit_total) / (sum(cache_hit_total) + sum(cache_miss_total))",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 30 },
+              { "color": "green", "value": 70 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "graphMode": "none",
+        "colorMode": "value",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      }
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "HTTP request rate by service",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "x": 0, "y": 6, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (job) (rate(http_server_requests_seconds_count[1m]))",
+          "legendFormat": "{{job}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Cache hits vs misses (rate)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "x": 12, "y": 6, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(cache_hit_total[1m]))",
+          "legendFormat": "hits"
+        },
+        {
+          "refId": "B",
+          "expr": "sum(rate(cache_miss_total[1m]))",
+          "legendFormat": "misses"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": { "fillOpacity": 15, "showPoints": "never" }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Circuit breaker state (1 = active state per series)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "x": 0, "y": 14, "w": 24, "h": 7 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "resilience4j_circuitbreaker_state{state!=\"disabled\"}",
+          "legendFormat": "{{name}}: {{state}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "fillOpacity": 10, "showPoints": "auto" },
+          "min": 0,
+          "max": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "single", "sort": "none" }
+      }
+    }
+  ]
+}
